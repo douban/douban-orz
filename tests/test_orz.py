@@ -17,7 +17,7 @@ from unittest import TestCase
 
 store = init()
 mc.clear()
-lc.clear()
+#lc.clear()
 
 
 # cursor.connection.commit()
@@ -42,13 +42,15 @@ class Dummy(object):
     class OrzMeta:
         extra_orders = (('-extra', ),)
 
-    def after_create(self):
+    def after_create(self, *a, **kw):
         self.after_created = True
+        for k, v in kw.iteritems():
+            setattr(self, 'after_created_%s' % k, v)
 
-    def after_save(self):
+    def after_save(self, *a, **kw):
         self.after_saved = True
 
-    def before_delete(self):
+    def before_delete(self, *a, **kw):
         mc.set('before_delete_test', True)
 
     @classmethod
@@ -190,5 +192,9 @@ class TestOrz(TestCase):
 
         Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh')
         self.assertEqual([130]+list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
+
+    def test_after_func_call(self):
+        d = Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh', test='test')
+        self.assertEqual(d.after_created_test, 'test')
 
 

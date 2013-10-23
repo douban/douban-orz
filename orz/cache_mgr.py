@@ -179,10 +179,10 @@ def method_combine(func):
         # 参数的问题没有想清楚，所以下面有些BadSmell
         def call_after(belonged):
             if hasattr(belonged, "after_"+func.func_name):
-                getattr(belonged, "after_"+func.func_name)()
+                getattr(belonged, "after_"+func.func_name)(*a, **kw)
 
         if hasattr(a[0], "before_"+func.func_name):
-            getattr(a[0], "before_"+func.func_name)()
+            getattr(a[0], "before_"+func.func_name)(*a, **kw)
 
         ret = func(*a, **kw)
         call_after(a[0] if ret is None else ret)
