@@ -12,10 +12,23 @@ from douban.mc import mc_from_config
 from douban.mc.wrapper import LocalCached
 mc = LocalCached(mc_from_config(MEMCACHED))
 
-from corelib.sqlstore import init
+from douban.sqlstore import store_from_config
+
+DATABASE = {
+    'farms': {
+        "luz_farm": {
+            "master": "localhost:test_vagrant9010:eye:sauron",
+            "tables": ["*"],
+            },
+    },
+    'options': {
+        'show_warnings': True,
+    }
+}
+
 from unittest import TestCase
 
-store = init()
+store = store_from_config(DATABASE)
 mc.clear()
 #lc.clear()
 
