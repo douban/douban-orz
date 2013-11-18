@@ -111,8 +111,8 @@ class SqlExecutor(object):
         ret = store.execute(statement, vals)
         return ret[0][0]
 
-    def fetch(self):
-        return self.mgr.fetch(self)
+    def fetch(self, flush):
+        return self.mgr.fetch(self, flush)
 
     def count(self):
         return self.mgr.count(self)

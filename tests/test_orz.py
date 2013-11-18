@@ -55,15 +55,14 @@ class Dummy(object):
     class OrzMeta:
         extra_orders = (('-extra', ),)
 
-    def after_create(self, *a, **kw):
+    def after_create(self, extra_args=None):
         self.after_created = True
-        for k, v in kw.iteritems():
-            setattr(self, 'after_created_%s' % k, v)
+        self.extra_args = extra_args
 
-    def after_save(self, *a, **kw):
+    def after_save(self):
         self.after_saved = True
 
-    def before_delete(self, *a, **kw):
+    def before_delete(self):
         mc.set('before_delete_test', True)
 
     @classmethod
@@ -98,10 +97,15 @@ class TestOrz(TestCase):
         mc.clear()
 
     def test_create(self):
-        z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh')
+        z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh', extra_args=10)
         self.assertTrue(z.after_created)
+        self.assertTrue(z.extra_args, 10)
         (id, subject_id, ep_num), = store.execute('''select id, subject_id, ep_num from test_orz where subject_id=10''')
         self.assertEqual((z.id, z.subject_id, ep_num), (str(id), str(subject_id), ep_num))
+
+        z = Dummy.create(id=5, subject_id=10, ep_num=10, content='hheheheh1')
+        self.assertEqual(z.id, '5')
+
 
     def test_gets_by(self):
         li = [Dummy.create(subject_id=10, ep_num=ep_num, content='hheheheh') for ep_num in range(10)]
@@ -206,8 +210,36 @@ class TestOrz(TestCase):
         Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh')
         self.assertEqual([130]+list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
 
-    def test_after_func_call(self):
-        d = Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh', test='test')
-        self.assertEqual(d.after_created_test, 'test')
+    def test_flush_get(self):
+        raw_num = 10
+        i = Dummy.create(subject_id=10, ep_num=1, content='hheheheh')
+        Dummy.get_by(id=i.id)
+
+        store.execute('update test_orz set ep_num=%s where id=%s', (raw_num, i.id))
+        store.commit()
+
+        self.assertEqual(Dummy.get_by(id=i.id).ep_num, i.ep_num)
+        flushed_obj = Dummy.get_by(id=i.id, force_flush=True)
+        self.assertNotEqual(flushed_obj.ep_num, i.ep_num)
+        self.assertEqual(flushed_obj.ep_num, raw_num)
+
+        crset = []
+        for i in range(10):
+            crset.append(Dummy.create(subject_id=11, ep_num=11, content='hheheheh'+str(i)))
+
+        Dummy.gets_by(subject_id=11, ep_num=11)
+
+        self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11)), 10)
+
+        store.execute('update test_orz set ep_num=%s where id=%s', (raw_num, crset[0].id))
+        store.commit()
+
+        self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11)), 10)
+        self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11, force_flush=True)), 9)
+
+
+
+    # def test_custom(self):
+    #     return Dummy.get_hello(subject_id=10)
 
 

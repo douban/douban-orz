@@ -43,12 +43,15 @@ class CachedOrmManager(object):
     def __getattr__(self, field):
         return getattr(self.sql_executor, field)
 
-    def _get_and_refresh(self, sql_executor, ids):
+    def _get_and_refresh(self, sql_executor, ids, force_flush=False):
         res = []
-        di = dict(zip(ids, mc.get_list([self.single_obj_ck + str(i) for i in ids])))
+        if not force_flush:
+            di = dict(zip(ids, mc.get_list([self.single_obj_ck + str(i) for i in ids])))
+        else:
+            di = {}
 
         for i in ids:
-            if di[i] is not None:
+            if di.get(i) is not None:
                 obj = di[i]
             else:
                 obj = self.cls(**sql_executor.get(i))
@@ -56,8 +59,8 @@ class CachedOrmManager(object):
             res.append(obj)
         return res
 
-    def get(self, id):
-        ret = self.filter(id=id).fetch()
+    def get(self, id, force_flush=False):
+        ret = self.gets_by(id=id, force_flush=force_flush)
         if len(ret) == 0:
             return None
         return ret[0]
@@ -75,7 +78,8 @@ class CachedOrmManager(object):
 
         return False
 
-    def fetch(self, sql_executor, **kwargs):
+
+    def fetch(self, sql_executor, force_flush, **kwargs):
         amount = sys.maxint
         start_limit = sql_executor.start_limit
         if sql_executor.conditions:
@@ -86,16 +90,24 @@ class CachedOrmManager(object):
                 ids = sql_executor.get_ids()
                 return [self.cls(**sql_executor.get(i)) for i in ids]
 
-            ck = config.to_string(sql_executor.conditions)
-            ids = mc.get(ck)
-
             sql_executor.start_limit = (0, amount) if amount is not None else tuple()
+
+            ck = config.to_string(sql_executor.conditions)
+
+            if not force_flush:
+                ids = mc.get(ck)
+            else:
+                ids = None
+
+
+
             if ids is not None:
                 ret = self._get_and_refresh(sql_executor, ids)
             else:
                 ids = sql_executor.get_ids()
                 mc.set(ck, ids, ONE_HOUR)
-                ret = self._get_and_refresh(sql_executor, ids)
+                ret = self._get_and_refresh(sql_executor, ids, force_flush)
+
         else:
             ids = sql_executor.get_ids()
             ret = [self.cls(**sql_executor.get(i)) for i in ids]
@@ -123,10 +135,12 @@ class CachedOrmManager(object):
         cks = self._get_cks(kwargs, fields_without_pk)
         mc.delete_multi(cks)
 
-        sql_data = dict((field, kwargs.pop(field)) for field in fields_without_pk)
+        sql_data = dict((field, kwargs.pop(field)) for field in self.db_fields if field in kwargs)
         _id = self.sql_executor.create(sql_data)
 
-        return self.cls(id=_id, **sql_data)
+        sql_data['id'] = _id
+
+        return self.cls(**sql_data)
 
     def _get_cks(self, data_src, fields):
         cks = []
@@ -155,8 +169,8 @@ class CachedOrmManager(object):
 
         self.sql_executor.delete(ins.id)
 
-    def gets_by(self, order_by='-id', start=0, limit=sys.maxint, **kw):
-        return self.filter(**kw).order_by(order_by).limit(start, limit).fetch()
+    def gets_by(self, order_by='-id', start=0, limit=sys.maxint, force_flush=False, **kw):
+        return self.filter(**kw).order_by(order_by).limit(start, limit).fetch(force_flush)
 
     def count_by(self, **kw):
         limit = kw.pop('limit', None)
@@ -174,25 +188,37 @@ class CachedOrmManager(object):
         return ret
 
 
-def method_combine(func):
-    def _(*a, **kw):
+def _split_dictonary(di, predicate):
+    include_kw, exclude_kw  = {}, {}
+    for k, v in di.iteritems():
+        if predicate(k, v):
+            include_kw[k] = v
+        else:
+            exclude_kw[k] = v
+    return include_kw, exclude_kw
+
+
+def method_combine(func, reserved_args=tuple()):
+    def _combine(cls_or_self, **kw):
         # 参数的问题没有想清楚，所以下面有些BadSmell
+        reserved_kw, exclude_kw = _split_dictonary(kw, lambda k, _: k in reserved_args)
         def call_after(belonged):
             if hasattr(belonged, "after_"+func.func_name):
-                getattr(belonged, "after_"+func.func_name)(*a, **kw)
+                after_func = getattr(belonged, "after_"+func.func_name)
+                after_func(**exclude_kw)
 
-        if hasattr(a[0], "before_"+func.func_name):
-            getattr(a[0], "before_"+func.func_name)(*a, **kw)
+        if hasattr(cls_or_self, "before_"+func.func_name):
+            before_func = getattr(cls_or_self, "before_"+func.func_name)
+            before_func(**exclude_kw)
 
-        ret = func(*a, **kw)
-        call_after(a[0] if ret is None else ret)
+        ret = func(cls_or_self, **reserved_kw)
+        call_after(cls_or_self if ret is None else ret)
         return ret
-    return _
+    return _combine
 
 
 
 def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, inj_mc=None):
-    # 3 lines below is temporary fix
     global mc
     mc = inj_mc
 
@@ -226,7 +252,7 @@ def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, i
     cls.dirty_fields = set()
     cls.id_casting = int if not id2str else str
     cls.save = method_combine(save)
-    cls.create = classmethod(method_combine(create))
+    cls.create = classmethod(method_combine(create, db_fields))
     cls.delete = method_combine(delete)
     cls.__org_init__ = cls.__init__
     cls.__init__ = init
