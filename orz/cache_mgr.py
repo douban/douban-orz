@@ -216,7 +216,7 @@ def method_combine(func, reserved_args=tuple()):
 
 
 
-def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, inj_mc=None):
+def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str=True):
 
     setattr(cls, 'id', OrzField(as_key=OrzField.KeyType.DESC))
     raw_db_fields = []
@@ -237,8 +237,8 @@ def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, i
     cls.objects = CachedOrmManager(table_name,
                                    cls,
                                    raw_db_fields,
-                                   sqlstore=inj_store,
-                                   mc=inj_mc,
+                                   sqlstore=sqlstore,
+                                   mc=mc,
                                    cache_ver=cache_ver,
                                    extra_orders=extra_orders)
 

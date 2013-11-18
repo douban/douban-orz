@@ -44,7 +44,7 @@ mc.clear()
 #                KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
 
 from orz import orz_decorate, OrzField, orz_get_multi
-@orz_decorate('test_orz', inj_store=store, inj_mc=mc)
+@orz_decorate('test_orz', sqlstore=store, mc=mc)
 class Dummy(object):
     subject_id = OrzField(as_key=OrzField.KeyType.ASC)
     ep_num = OrzField(as_key=OrzField.KeyType.ASC, default=0)
