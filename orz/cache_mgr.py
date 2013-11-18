@@ -7,8 +7,6 @@ from .base_mgr import OrmItem, OrzField
 from .mixed_ins import *
 from .configs import CacheConfigMgr, Config
 
-mc = None
-
 ONE_HOUR=3600
 
 HEADQUARTER_VERSION = 'a3'
@@ -25,11 +23,12 @@ def make_orders(fields):
 
 class CachedOrmManager(object):
     # TODO mgr.db_fields is sql_executor's
-    def __init__(self, table_name, cls, db_fields,
-                 cache_ver='', extra_orders=tuple(), sqlstore=None):
+    def __init__(self, table_name, cls, db_fields, sqlstore, mc,
+                 cache_ver='', extra_orders=tuple()):
         self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
         self.sql_executor = SqlExecutor(self, table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
+        self.mc = mc
         kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
         self.config_mgr = CacheConfigMgr()
 
@@ -45,7 +44,7 @@ class CachedOrmManager(object):
     def _get_and_refresh(self, sql_executor, ids, force_flush=False):
         res = []
         if not force_flush:
-            di = dict(zip(ids, mc.get_list([self.single_obj_ck + str(i) for i in ids])))
+            di = dict(zip(ids, self.mc.get_list([self.single_obj_ck + str(i) for i in ids])))
         else:
             di = {}
 
@@ -54,7 +53,7 @@ class CachedOrmManager(object):
                 obj = di[i]
             else:
                 obj = self.cls(**sql_executor.get(i))
-                mc.set(self.single_obj_ck + str(i), obj, ONE_HOUR)
+                self.mc.set(self.single_obj_ck + str(i), obj, ONE_HOUR)
             res.append(obj)
         return res
 
@@ -94,7 +93,7 @@ class CachedOrmManager(object):
             ck = config.to_string(sql_executor.conditions)
 
             if not force_flush:
-                ids = mc.get(ck)
+                ids = self.mc.get(ck)
             else:
                 ids = None
 
@@ -104,7 +103,7 @@ class CachedOrmManager(object):
                 ret = self._get_and_refresh(sql_executor, ids)
             else:
                 ids = sql_executor.get_ids()
-                mc.set(ck, ids, ONE_HOUR)
+                self.mc.set(ck, ids, ONE_HOUR)
                 ret = self._get_and_refresh(sql_executor, ids, force_flush)
 
         else:
@@ -119,10 +118,10 @@ class CachedOrmManager(object):
     def count(self, sql_executor):
         config = self.config_mgr.lookup_normal(sql_executor.conditions.keys())
         ck = config.to_string(sql_executor.conditions)
-        c = mc.get(ck)
+        c = self.mc.get(ck)
         if c is None:
             ret = sql_executor.calc_count()
-            mc.set(ck, ret, ONE_HOUR)
+            self.mc.set(ck, ret, ONE_HOUR)
             return ret
         else:
             return c
@@ -132,7 +131,7 @@ class CachedOrmManager(object):
         kwargs = self.default_vals.copy()
         kwargs.update(raw_kwargs)
         cks = self._get_cks(kwargs, fields_without_pk)
-        mc.delete_multi(cks)
+        self.mc.delete_multi(cks)
 
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_fields if field in kwargs)
         _id = self.sql_executor.create(sql_data)
@@ -157,14 +156,14 @@ class CachedOrmManager(object):
         cks.extend(self._get_cks(ins, ins.dirty_fields))
 
         all_cks = cks + [self.single_obj_ck+str(ins.id)]
-        mc.delete_multi(all_cks)
+        self.mc.delete_multi(all_cks)
 
         sql_data = dict((field, getattr(ins, field)) for field in ins.dirty_fields)
         self.sql_executor.update_row(ins.id, sql_data)
 
     def delete(self, ins):
         cks = self._get_cks(ins, ["id",]+self.db_fields)
-        mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
+        self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
 
         self.sql_executor.delete(ins.id)
 
@@ -180,10 +179,10 @@ class CachedOrmManager(object):
         func_name = func.func_name
         cfg = self.config_mgr.lookup_custom([func_name,]+kw.keys())
         ck = cfg.to_string(kw)
-        ret = mc.get(ck)
+        ret = self.mc.get(ck)
         if ret is None:
             ret = func(self.cls, *a, **kw)
-            mc.set(ck, ret)
+            self.mc.set(ck, ret)
         return ret
 
 
@@ -218,8 +217,6 @@ def method_combine(func, reserved_args=tuple()):
 
 
 def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, inj_mc=None):
-    global mc
-    mc = inj_mc
 
     setattr(cls, 'id', OrzField(as_key=OrzField.KeyType.DESC))
     raw_db_fields = []
@@ -240,9 +237,11 @@ def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, i
     cls.objects = CachedOrmManager(table_name,
                                    cls,
                                    raw_db_fields,
+                                   sqlstore=inj_store,
+                                   mc=inj_mc,
                                    cache_ver=cache_ver,
-                                   extra_orders=extra_orders,
-                                   sqlstore=inj_store)
+                                   extra_orders=extra_orders)
+
 
     cls.dirty_fields = set()
     cls.id_casting = int if not id2str else str
