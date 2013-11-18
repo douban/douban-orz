@@ -1,6 +1,6 @@
 from unittest import TestCase
 from itertools import combinations, chain
-from orz.configs import GetsByConfig, Config, CacheConfigMgr
+from ORZ.configs import GetsByConfig, Config, CacheConfigMgr
 
 class TestGetsByConfigs(TestCase):
     def test_hash_keys(self):

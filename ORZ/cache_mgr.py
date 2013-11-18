@@ -207,7 +207,7 @@ def method_combine(func, reserved_args=tuple()):
 
         if hasattr(cls_or_self, "before_"+func.func_name):
             before_func = getattr(cls_or_self, "before_"+func.func_name)
-            before_func(**exclude_kw)
+            before_func(**kw)
 
         ret = func(cls_or_self, **reserved_kw)
         call_after(cls_or_self if ret is None else ret)

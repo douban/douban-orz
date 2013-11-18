@@ -36,7 +36,6 @@ setup(
     classifiers=CLASSIFIERS,
     py_modules=MODULES,
     packages=PACKAGES,
-    namespace_packages=["ORZ"],
     zip_safe=False,
     test_suite='tests',
     # install_requires=[

@@ -43,7 +43,7 @@ mc.clear()
 #                PRIMARY KEY (`id`),
 #                KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
 
-from orz import orz_decorate, OrzField, orz_get_multi
+from ORZ import orz_decorate, OrzField, orz_get_multi
 @orz_decorate('test_orz', sqlstore=store, mc=mc)
 class Dummy(object):
     subject_id = OrzField(as_key=OrzField.KeyType.ASC)
@@ -54,6 +54,11 @@ class Dummy(object):
 
     class OrzMeta:
         extra_orders = (('-extra', ),)
+
+    @classmethod
+    def before_create(cls, **kw):
+        if kw['subject_id'] == -1:
+            raise ValueError
 
     def after_create(self, extra_args=None):
         self.after_created = True
@@ -105,6 +110,8 @@ class TestOrz(TestCase):
 
         z = Dummy.create(id=5, subject_id=10, ep_num=10, content='hheheheh1')
         self.assertEqual(z.id, '5')
+
+        self.assertRaises(ValueError, Dummy.create, **dict(id=5, subject_id=-1, ep_num=10, content='hheheheh1'))
 
 
     def test_gets_by(self):
