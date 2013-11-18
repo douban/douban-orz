@@ -11,9 +11,7 @@ mc = None
 
 ONE_HOUR=3600
 
-EPSILON = None
-
-HEADQUARTER_VERSION = '3'
+HEADQUARTER_VERSION = 'a3'
 
 
 def make_orders(fields):
@@ -27,11 +25,12 @@ def make_orders(fields):
 
 class CachedOrmManager(object):
     # TODO mgr.db_fields is sql_executor's
-    def __init__(self, table_name, cls, db_fields, custom_cache, cache_ver='', extra_orders=tuple(), sqlstore=None):
-        self.single_obj_ck = "a" + HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
+    def __init__(self, table_name, cls, db_fields,
+                 cache_ver='', extra_orders=tuple(), sqlstore=None):
+        self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
         self.sql_executor = SqlExecutor(self, table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
-        kv_to_ids_ck = "a" + HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
+        kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
         self.config_mgr = CacheConfigMgr()
 
         orders = make_orders(db_fields) + extra_orders
@@ -225,14 +224,11 @@ def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, i
     setattr(cls, 'id', OrzField(as_key=OrzField.KeyType.DESC))
     raw_db_fields = []
     db_fields = []
-    custom_cache = []
     for i, v in cls.__dict__.iteritems():
         if isinstance(v, OrzField):
             v.name = i
             raw_db_fields.append(v)
             db_fields.append(i)
-        # elif callable(getattr(cls, i)) and hasattr(getattr(cls, i), 'related_key_names'):
-        #     custom_cache.append((i, getattr(cls, i).related_key_names))
 
     if hasattr(cls, "OrzMeta"):
         extra_orders = tuple([(tuple(i) if type(i)==str else i) for i in getattr(cls.OrzMeta, 'extra_orders', tuple())])
@@ -244,7 +240,6 @@ def cached_wrapper(cls, table_name, cache_ver='', id2str=True, inj_store=None, i
     cls.objects = CachedOrmManager(table_name,
                                    cls,
                                    raw_db_fields,
-                                   custom_cache,
                                    cache_ver=cache_ver,
                                    extra_orders=extra_orders,
                                    sqlstore=inj_store)
