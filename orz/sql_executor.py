@@ -2,13 +2,9 @@ from operator import itemgetter
 from itertools import chain
 from copy import deepcopy
 
-store = None
 
 class SqlExecutor(object):
     def __init__(self, mgr, table_name, db_fields, sqlstore):
-        global store
-        store = sqlstore
-
         self.sqlstore = sqlstore
         self.mgr = mgr
         self.conditions = {}
@@ -24,8 +20,8 @@ class SqlExecutor(object):
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
         statement = "insert into %s %s" % (self.table_name, set_sql)
-        _id = store.execute(statement, v)
-        store.commit()
+        _id = self.sqlstore.execute(statement, v)
+        self.sqlstore.commit()
         return _id
 
     def update_row(self, id, field_data):
@@ -33,13 +29,13 @@ class SqlExecutor(object):
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
         statement = "update %s %s where id = %s" % (self.table_name, set_sql, id)
-        store.execute(statement, tuple(v))
-        store.commit()
+        self.sqlstore.execute(statement, tuple(v))
+        self.sqlstore.commit()
 
     def delete(self, id):
         statement = 'delete from %s where id = %%s' % self.table_name
-        store.execute(statement, id)
-        store.commit()
+        self.sqlstore.execute(statement, id)
+        self.sqlstore.commit()
 
     def _clone(self):
         cloned = self.__class__(self.mgr, self.table_name, self.db_fields, self.sqlstore)
@@ -73,7 +69,7 @@ class SqlExecutor(object):
 
         statement = "select id from %s %s %s %s" % \
                         (self.table_name, where_sql, order_sql, limit_sql)
-        ids = map(itemgetter(0), store.execute(statement, tuple(chain(v1, v3))))
+        ids = map(itemgetter(0), self.sqlstore.execute(statement, tuple(chain(v1, v3))))
         return ids
 
     def __getitem__(self, key):
@@ -92,7 +88,7 @@ class SqlExecutor(object):
             #BIG TODO for non exist obj
         fields = ['id'] + list(self.db_fields)
         statement = "select %s from %s where id=%%s" % (",".join(fields), self.table_name)
-        ret = store.execute(statement, id)
+        ret = self.sqlstore.execute(statement, id)
         if not ret:
             return None
         return dict(zip(fields+['to_create'], list(ret[0])+[False]))
@@ -108,7 +104,7 @@ class SqlExecutor(object):
                                   [("%s=%%s" % k, v) for k, v in self.conditions.iteritems()],
                                   ' and ')
         statement = "select count(1) from %s %s" %  (self.table_name, sql)
-        ret = store.execute(statement, vals)
+        ret = self.sqlstore.execute(statement, vals)
         return ret[0][0]
 
     def fetch(self, flush):
