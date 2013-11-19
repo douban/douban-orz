@@ -217,6 +217,16 @@ class TestOrz(TestCase):
         Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh')
         self.assertEqual([130]+list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
 
+    def test_creation_should_delete_pk(self):
+        ID = 1000
+        empty = Dummy.get_by(ID)
+        self.assertEqual(empty, None)
+
+        Dummy.create(id=1000, subject_id=10, ep_num=1, content='hheheheh')
+
+        new = Dummy.get_by(ID)
+        self.assertEqual(new.id, ID)
+
     def test_flush_get(self):
         raw_num = 10
         i = Dummy.create(subject_id=10, ep_num=1, content='hheheheh')
