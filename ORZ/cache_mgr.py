@@ -127,10 +127,9 @@ class CachedOrmManager(object):
             return c
 
     def create(self, raw_kwargs):
-        fields_without_pk = set(self.db_fields) - set(['id'])
         kwargs = self.default_vals.copy()
         kwargs.update(raw_kwargs)
-        cks = self._get_cks(kwargs, fields_without_pk)
+        cks = self._get_cks(kwargs, self.db_fields)
         self.mc.delete_multi(cks)
 
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_fields if field in kwargs)
