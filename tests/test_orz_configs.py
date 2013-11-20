@@ -6,19 +6,19 @@ class TestGetsByConfigs(TestCase):
     def test_hash_keys(self):
         keys = ['a', 'b', 'c', 'd']
         config = Config('111', keys)
-        cfg = GetsByConfig(config, 'c')
+        cfg = GetsByConfig(config, ('c',))
         self.assertEqual(cfg.as_key(), tuple(sorted(config.as_key()+(cfg.order,))))
 
     def test_to_strings(self):
         kw = {'a':1, 'b':2}
-        cfg = GetsByConfig(Config('111', kw.keys()), 'a')
+        cfg = GetsByConfig(Config('111', kw.keys()), ('a', ))
         self.assertEqual(cfg.to_string(kw), '111:a=1|b=2|order_by:a')
 
 
 class TestConfigMgr(TestCase):
     def setUp(self):
         self.config = Config("11111", ("a", "b"))
-        self.gets_by_config = GetsByConfig(self.config, "a")
+        self.gets_by_config = GetsByConfig(self.config, ("a", ))
 
     def test_add(self):
         mgr = CacheConfigMgr()
@@ -43,7 +43,7 @@ class TestConfigMgr(TestCase):
         sort_ = lambda x: sorted(x, key= lambda x:''.join(x))
         keys = ("a", "b", "c")
         mgr = CacheConfigMgr()
-        mgr.generate_basic_configs('1111', keys, keys)
+        mgr.generate_basic_configs('1111', keys, tuple((i, ) for i in keys))
 
         self.assertEqual(len(mgr.normal_config_coll), 7)
         self.assertEqual(len(mgr.gets_by_config_coll), 7*3)
@@ -65,4 +65,10 @@ class TestConfigMgr(TestCase):
         self.assertEqual(sort_([i.as_key() for i in cfgs]),
                          sort_([i.as_key() for i in predate_configs]))
 
+
+        mgr.generate_basic_configs('1112', keys, (('c', 'b'),))
+        cfgs = mgr.lookup_related("c")
+        predate_configs = [c for c in mgr.items() if "c" in c.keys]
+        self.assertEqual(sort_([i.as_key() for i in cfgs]),
+                         sort_([i.as_key() for i in predate_configs]))
 

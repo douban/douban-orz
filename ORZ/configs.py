@@ -104,10 +104,9 @@ class Config(object):
 
 
 class GetsByConfig(object):
-    keys = Forward('config', 'keys')
-
     def __init__(self, config, order):
         self.config = config
+        self.keys = tuple(config.keys) + order
         self.order = 'order_by:' + ('|'.join(order).replace(" ", ""))
 
     def as_key(self):
