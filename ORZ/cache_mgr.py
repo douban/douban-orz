@@ -243,7 +243,6 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
                                    extra_orders=extra_orders)
 
 
-    cls.dirty_fields = set()
     cls.id_casting = int if not id2str else str
     cls.save = method_combine(save)
     cls.create = classmethod(method_combine(create, db_fields))

@@ -106,8 +106,9 @@ class Config(object):
 class GetsByConfig(object):
     def __init__(self, config, order):
         self.config = config
-        self.keys = tuple(config.keys) + order
-        self.order = 'order_by:' + ('|'.join(order).replace(" ", ""))
+        # self.keys = tuple(config.keys) + order
+        self.keys = tuple(config.keys) + tuple(i.strip("-") for i in order)
+        self.order = 'order_by:' + ('|'.join(sorted(order)).replace(" ", ""))
 
     def as_key(self):
         return tuple(sorted(self.config.as_key() + (self.order, )))

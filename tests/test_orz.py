@@ -53,7 +53,7 @@ class Dummy(object):
     extra = OrzField(default=1)
 
     class OrzMeta:
-        extra_orders = (('-extra', ), ('ep_num', 'flag'))
+        extra_orders = (('-extra', 'ep_num'), )
 
     @classmethod
     def before_create(cls, **kw):
@@ -195,18 +195,6 @@ class TestOrz(TestCase):
 
         self.assertEqual(range(91, 101), [i.ep_num for i in Dummy.gets_by(subject_id=10, order_by='ep_num')])
 
-        for f in range(2):
-            for j in range(23, 20, -1):
-                Dummy.create(subject_id=9, ep_num=j, flag=f, content='hheheheh')
-        output = [(i.ep_num, i.flag) for i in Dummy.gets_by(subject_id=9, order_by=('ep_num', 'flag'))]
-        self.assertEqual(output, [(i, j) for i in range(21, 24) for j in (0, 1)])
-
-        for i in Dummy.gets_by(subject_id=9, flag=0):
-            i.delete()
-
-        output = [(i.ep_num, i.flag) for i in Dummy.gets_by(subject_id=9, order_by=('ep_num', 'flag'))]
-        self.assertEqual(output, [(i, 1) for i in range(21, 24)])
-
     def test_get_multiple_ids(self):
         ids = []
         for i in range(100, 90, -1):
@@ -221,13 +209,28 @@ class TestOrz(TestCase):
         self.assertTrue(100 not in [i.ep_num for i in Dummy.get_non_targeted(100)])
 
     def test_extra_order_by(self):
-        for i in range(100, 90, -1):
-            Dummy.create(subject_id=10, ep_num=i, extra=10+i, content='hheheheh')
+        # for i in range(100, 90, -1):
+        #     Dummy.create(subject_id=10, ep_num=i, extra=10+i, content='hheheheh')
 
-        self.assertEqual(list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
+        # self.assertEqual(list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
 
-        Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh')
-        self.assertEqual([130]+list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
+        # Dummy.create(subject_id=10, ep_num=130, extra=130, content='hheheheh')
+        # self.assertEqual([130]+list(reversed(range(101, 111))), [i.extra for i in Dummy.gets_by(subject_id=10, order_by='-extra')])
+
+        for f in range(2):
+            for j in range(23, 20, -1):
+                Dummy.create(subject_id=9, ep_num=j, extra=f, content='hheheheh')
+        output = [(i.ep_num, i.extra) for i in Dummy.gets_by(subject_id=9, order_by=('-extra', 'ep_num'))]
+        self.assertEqual(output, [(i, j)  for j in (1, 0)  for i in range(21, 24)])
+
+        for i in Dummy.gets_by(subject_id=9, order_by=('-extra', 'ep_num')):
+            if i.extra == 0:
+                i.extra = 1
+                i.save()
+
+        output = [(i.ep_num, i.extra) for i in Dummy.gets_by(subject_id=9, order_by=('-extra', 'ep_num'))]
+        self.assertEqual(output, [(i, 1) for i in [21, 21, 22, 22, 23, 23]])
+
 
     def test_creation_should_delete_pk(self):
         ID = str(1000)

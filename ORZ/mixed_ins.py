@@ -37,6 +37,7 @@ def setstate(self, state):
 def init(self, to_create=True, *a, **kw):
     self.to_create = to_create
     self._initted = False
+    self.dirty_fields = set()
     for i in self.db_fields:
         prev_val = kw.pop(i)
         val = self.id_casting(prev_val) if (i=='id' or i.endswith('_id')) and prev_val is not None else prev_val
