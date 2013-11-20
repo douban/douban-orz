@@ -82,7 +82,7 @@ class CachedOrmManager(object):
         start_limit = sql_executor.start_limit
         if sql_executor.conditions:
             config = self.config_mgr.lookup_gets_by(sql_executor.conditions.keys()+
-                                                    ['order_by:'+sql_executor.org_order_key, ])
+                                                    ['order_by:'+('|'.join(sorted(sql_executor.org_order_key))), ])
             if amount is not None and \
                 self._amount_check(amount, sql_executor.start_limit):
                 ids = sql_executor.get_ids()
@@ -167,7 +167,8 @@ class CachedOrmManager(object):
         self.sql_executor.delete(ins.id)
 
     def gets_by(self, order_by='-id', start=0, limit=sys.maxint, force_flush=False, **kw):
-        return self.filter(**kw).order_by(order_by).limit(start, limit).fetch(force_flush)
+        real_order_by = (order_by, ) if type(order_by) is not tuple else order_by
+        return self.filter(**kw).order_by(real_order_by).limit(start, limit).fetch(force_flush)
 
     def count_by(self, **kw):
         limit = kw.pop('limit', None)

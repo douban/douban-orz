@@ -11,8 +11,8 @@ class SqlExecutor(object):
         self.db_fields = db_fields
         self.table_name = table_name
         self.start_limit = ()
-        self.order_key = ('id', 'desc')
-        self.org_order_key = '-id'
+        self.order_key = (('id', 'desc'),)
+        self.org_order_key = ('-id', )
         #self.dirty_fields = set()
 
     def create(self, field_data):
@@ -51,18 +51,20 @@ class SqlExecutor(object):
     def get_order_by(self):
         return self.org_order_key
 
-    def order_by(self, key):
-        self.org_order_key = key
-        if key.startswith('-'):
-            key = (key[1:], 'desc')
-        else:
-            key = (key, 'asc')
-        self.order_key = key
+    def order_by(self, keys):
+        self.org_order_key = keys
+        def transform(key):
+            if key.startswith('-'):
+                key = (key[1:], 'desc')
+            else:
+                key = (key, 'asc')
+            return key
+        self.order_key = map(transform, keys)
         return self
 
     def get_ids(self):
         limit_sql, v3 = self._sql_statement('limit', zip(["%s", "%s"], self.start_limit))
-        order_sql = "" if not self.order_key else 'order by %s %s' % self.order_key
+        order_sql = "" if not self.order_key else ('order by %s' % ",".join("%s %s" % (k, v) for k, v in self.order_key))
         where_sql, v1 = self._sql_statement('where',
                                         [("%s=%%s" % k, v) for k, v in self.conditions.iteritems()],
                                         ' and ')

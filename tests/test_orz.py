@@ -53,7 +53,7 @@ class Dummy(object):
     extra = OrzField(default=1)
 
     class OrzMeta:
-        extra_orders = (('-extra', ),)
+        extra_orders = (('-extra', ), ('ep_num', 'flag'))
 
     @classmethod
     def before_create(cls, **kw):
@@ -194,6 +194,18 @@ class TestOrz(TestCase):
             Dummy.create(subject_id=10, ep_num=i, content='hheheheh')
 
         self.assertEqual(range(91, 101), [i.ep_num for i in Dummy.gets_by(subject_id=10, order_by='ep_num')])
+
+        for f in range(2):
+            for j in range(23, 20, -1):
+                Dummy.create(subject_id=9, ep_num=j, flag=f, content='hheheheh')
+        output = [(i.ep_num, i.flag) for i in Dummy.gets_by(subject_id=9, order_by=('ep_num', 'flag'))]
+        self.assertEqual(output, [(i, j) for i in range(21, 24) for j in (0, 1)])
+
+        for i in Dummy.gets_by(subject_id=9, flag=0):
+            i.delete()
+
+        output = [(i.ep_num, i.flag) for i in Dummy.gets_by(subject_id=9, order_by=('ep_num', 'flag'))]
+        self.assertEqual(output, [(i, 1) for i in range(21, 24)])
 
     def test_get_multiple_ids(self):
         ids = []
