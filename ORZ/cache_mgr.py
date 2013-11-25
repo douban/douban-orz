@@ -26,7 +26,7 @@ class CachedOrmManager(object):
     def __init__(self, table_name, cls, db_fields, sqlstore, mc,
                  cache_ver='', extra_orders=tuple()):
         self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
-        self.sql_executor = SqlExecutor(self, table_name, [f.name for f in db_fields], sqlstore)
+        self.sql_executor = SqlExecutor(table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
         self.mc = mc
         kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
@@ -77,53 +77,41 @@ class CachedOrmManager(object):
         return False
 
 
-    def fetch(self, sql_executor, force_flush, **kwargs):
+    def fetch(self, force_flush, conditions, order_keys = None, start_limit = None):
         amount = sys.maxint
-        start_limit = sql_executor.start_limit
-        if sql_executor.conditions:
-            config = self.config_mgr.lookup_gets_by(sql_executor.conditions.keys(), sql_executor.org_order_key)
+        sql_executor = self.sql_executor
+        if conditions:
+            config = self.config_mgr.lookup_gets_by(conditions.keys(), order_keys)
             if amount is not None and \
-                self._amount_check(amount, sql_executor.start_limit):
-                ids = sql_executor.get_ids()
+                self._amount_check(amount, start_limit):
+                ids = sql_executor.get_ids(conditions, _tart_limit, order_keys)
                 return [self.cls(**sql_executor.get(i)) for i in ids]
 
-            sql_executor.start_limit = (0, amount) if amount is not None else tuple()
+            _start_limit = (0, amount) if amount is not None else tuple()
 
-            ck = config.to_string(sql_executor.conditions)
+            ck = config.to_string(conditions)
 
             if not force_flush:
                 ids = self.mc.get(ck)
             else:
                 ids = None
 
-
-
             if ids is not None:
                 ret = self._get_and_refresh(sql_executor, ids)
             else:
-                ids = sql_executor.get_ids()
+                ids = sql_executor.get_ids(conditions, _start_limit, order_keys)
                 self.mc.set(ck, ids, ONE_HOUR)
                 ret = self._get_and_refresh(sql_executor, ids, force_flush)
 
         else:
-            ids = sql_executor.get_ids()
+            ids = sql_executor.get_ids(conditions, start_limit, order_keys)
             ret = [self.cls(**sql_executor.get(i)) for i in ids]
 
         if start_limit:
+            print start_limit
             start, limit = start_limit
             return ret[start:start + limit]
         return ret
-
-    def count(self, sql_executor):
-        config = self.config_mgr.lookup_normal(sql_executor.conditions.keys())
-        ck = config.to_string(sql_executor.conditions)
-        c = self.mc.get(ck)
-        if c is None:
-            ret = sql_executor.calc_count()
-            self.mc.set(ck, ret, ONE_HOUR)
-            return ret
-        else:
-            return c
 
     def create(self, raw_kwargs):
         kwargs = self.default_vals.copy()
@@ -167,12 +155,18 @@ class CachedOrmManager(object):
 
     def gets_by(self, order_by='-id', start=0, limit=sys.maxint, force_flush=False, **kw):
         real_order_by = (order_by, ) if type(order_by) is not tuple else order_by
-        return self.filter(**kw).order_by(real_order_by).limit(start, limit).fetch(force_flush)
+        return self.fetch(force_flush, kw, real_order_by, (start, limit))
 
-    def count_by(self, **kw):
-        limit = kw.pop('limit', None)
-        if limit is None:
-            return self.filter(**kw).count()
+    def count_by(self, **conditions):
+        config = self.config_mgr.lookup_normal(conditions.keys())
+        ck = config.to_string(conditions)
+        c = self.mc.get(ck)
+        if c is None:
+            ret = self.sql_executor.calc_count(conditions)
+            self.mc.set(ck, ret, ONE_HOUR)
+            return ret
+        else:
+            return c
 
     def gets_custom(self, func, a, kw):
         func_name = func.func_name
