@@ -22,22 +22,22 @@ class TestConfigMgr(TestCase):
 
     def test_add(self):
         mgr = CacheConfigMgr()
-        mgr._add(self.config)
+        mgr.add_to(mgr.normal_config_coll, self.config)
         self.assertEqual(len(mgr.normal_config_coll), 1)
         self.assertEqual(mgr.normal_config_coll[self.config.as_key()], self.config)
 
-        mgr._add(self.gets_by_config)
+        mgr.add_to(mgr.gets_by_config_coll, self.gets_by_config)
         self.assertEqual(len(mgr.normal_config_coll), 1)
         self.assertEqual(len(mgr.gets_by_config_coll), 1)
         self.assertEqual(mgr.gets_by_config_coll[self.gets_by_config.as_key()], self.gets_by_config)
 
     def test_lookup(self):
         mgr = CacheConfigMgr()
-        mgr._add(self.config)
-        mgr._add(self.gets_by_config)
+        mgr.add_to(mgr.normal_config_coll, self.config)
+        mgr.add_to(mgr.gets_by_config_coll, self.gets_by_config)
 
         self.assertEqual(mgr.lookup_normal(("b", "a")) , self.config)
-        self.assertEqual(mgr.lookup_gets_by(("b", "a", "order_by:a")) , self.gets_by_config)
+        self.assertEqual(mgr.lookup_gets_by(("b", "a"), ("a", )) , self.gets_by_config)
 
     def test_gen_basic_configs(self):
         sort_ = lambda x: sorted(x, key= lambda x:''.join(x))

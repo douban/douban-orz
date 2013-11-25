@@ -13,14 +13,6 @@ class Forward(object):
         return getattr(getattr(obj, self.dest_obj_member), self.dest)
 
 
-def partial_method(func, **kw):
-    def __(*a, **nkw):
-        nkw.update(kw)
-        return func(*a, **nkw)
-    return __
-
-
-
 def serialize_kv_alphabetically(di):
     def change_bool(value):
         return int(value) if type(value) == bool else value
@@ -59,17 +51,17 @@ class CacheConfigMgr(object):
                 self.add_to(self.gets_by_config_coll, GetsByConfig(c, e))
 
 
-    def _lookup(self, raw_keywords, configs_getter):
+    def lookup_normal(self, raw_keywords):
         keywords = tuple(sorted(raw_keywords))
-        return configs_getter(self)[keywords]
+        return self.normal_config_coll[keywords]
 
     def lookup_related(self, field):
         return self.key_related[field]
 
-
-    lookup_gets_by, lookup_normal, lookup_custom = \
-            [partial_method(_lookup, configs_getter = attrgetter(i+'_config_coll')) for i in ['gets_by', 'normal', 'custom']]
-
+    def lookup_gets_by(self, fields, order_by_fields=('-id',)):
+        order_bys = ('order_by:%s' % ('|'.join(sorted(order_by_fields))), )
+        keywords = tuple(sorted(tuple(fields) + order_bys))
+        return self.gets_by_config_coll[keywords]
 
 
 class Config(object):

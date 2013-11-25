@@ -81,8 +81,7 @@ class CachedOrmManager(object):
         amount = sys.maxint
         start_limit = sql_executor.start_limit
         if sql_executor.conditions:
-            config = self.config_mgr.lookup_gets_by(sql_executor.conditions.keys()+
-                                                    ['order_by:'+('|'.join(sorted(sql_executor.org_order_key))), ])
+            config = self.config_mgr.lookup_gets_by(sql_executor.conditions.keys(), sql_executor.org_order_key)
             if amount is not None and \
                 self._amount_check(amount, sql_executor.start_limit):
                 ids = sql_executor.get_ids()
