@@ -34,13 +34,9 @@ class CacheConfigMgr(object):
         self.custom_config_coll = {}
         self.key_related = defaultdict(list)
 
-    def _add(self, config):
-        if isinstance(config, Config):
-            config_coll = self.normal_config_coll
-        elif isinstance(config, GetsByConfig):
-            config_coll = self.gets_by_config_coll
-        else:
-            raise ValueError("Config like object only")
+    def add_to(self, config_coll, config):
+        for key in config.keys:
+            self.key_related[key].append(config)
 
         config_coll[config.as_key()] = config
 
@@ -49,28 +45,19 @@ class CacheConfigMgr(object):
             for i in member.itervalues():
                 yield i
 
-    def add_custom(self, config):
-        self.custom_config_coll[(config.prefix,)+config.as_key()] = config
-        for k in config.keys:
-            self.key_related[k].append(config)
-
-
     def generate_basic_configs(self, prefix, key_field_names, orders=tuple()):
         comb = list(chain(*[combinations(key_field_names, i) for i in range(1, len(key_field_names)+1)]))
         cfgs = []
 
         for i in comb:
             c = Config(prefix, i)
+            self.add_to(self.normal_config_coll, c)
             cfgs.append(c)
-            self._add(c)
 
         for c in cfgs:
             for e in orders:
-                self._add(GetsByConfig(c, e))
+                self.add_to(self.gets_by_config_coll, GetsByConfig(c, e))
 
-        for i in self.items():
-            for k in i.keys:
-                self.key_related[k].append(i)
 
     def _lookup(self, raw_keywords, configs_getter):
         keywords = tuple(sorted(raw_keywords))
