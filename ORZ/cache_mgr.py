@@ -146,7 +146,7 @@ class CachedOrmManager(object):
         self.sql_executor.update_row(ins.id, sql_data)
 
     def delete(self, ins):
-        cks = self._get_cks(ins, ["id",]+self.db_fields)
+        cks = self._get_cks(ins, ['id',]+self.db_fields)
         self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
 
         self.sql_executor.delete(ins.id)
