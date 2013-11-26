@@ -108,7 +108,6 @@ class CachedOrmManager(object):
             ret = [self.cls(**self.sql_executor.get(i)) for i in ids]
 
         if start_limit:
-            print start_limit
             start, limit = start_limit
             return ret[start:start + limit]
         return ret
