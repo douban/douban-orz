@@ -22,12 +22,13 @@ def make_orders(fields):
 
 class CachedOrmManager(object):
     # TODO mgr.db_fields is sql_executor's
-    def __init__(self, table_name, cls, db_fields, sqlstore, mc,
+    def __init__(self, table_name, cls, primary_field, db_fields, sqlstore, mc,
                  cache_ver='', extra_orders=tuple()):
         self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
         self.sql_executor = SqlExecutor(table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
         self.mc = mc
+        self.primary_field = primary_field
         kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
         self.config_mgr = CacheConfigMgr()
 
@@ -118,9 +119,9 @@ class CachedOrmManager(object):
         self.mc.delete_multi(cks)
 
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_fields if field in kwargs)
-        _id = self.sql_executor.create(sql_data)
+        _primary_field_val = self.sql_executor.create(sql_data)
 
-        sql_data['id'] = _id
+        sql_data[self.primary_field.name] = _primary_field_val
 
         return self.cls(**sql_data)
 
@@ -146,13 +147,16 @@ class CachedOrmManager(object):
         self.sql_executor.update_row(ins.id, sql_data)
 
     def delete(self, ins):
-        cks = self._get_cks(ins, ['id',]+self.db_fields)
+        cks = self._get_cks(ins, [self.primary_field.name]+self.db_fields)
         self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
 
         self.sql_executor.delete(ins.id)
 
-    def gets_by(self, order_by='-id', start=0, limit=sys.maxint, force_flush=False, **kw):
-        real_order_by = (order_by, ) if type(order_by) is not tuple else order_by
+    def gets_by(self, order_by=None, start=0, limit=sys.maxint, force_flush=False, **kw):
+        if order_by is None:
+            real_order_by = self.primary_field.as_default_order_key()
+        else:
+            real_order_by = (order_by, ) if type(order_by) is not tuple else order_by
         return self.fetch(force_flush, kw, real_order_by, (start, limit))
 
     def count_by(self, **conditions):

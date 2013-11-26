@@ -1,5 +1,6 @@
 import sys
 from functools import wraps
+from itertools import chain
 
 class OrmItem(object):
     def __init__(self, field_name):
@@ -21,6 +22,8 @@ class OrmItem(object):
 
 class OrzField(object):
     NO_DEFAULT = sys.maxint
+    name = None
+
     class KeyType(object):
         NOT_INDEX, DESC, ASC, AD = range(4)
 
@@ -33,6 +36,12 @@ class OrzPrimaryField(OrzField):
     class OrderType(object):
         DESC, ASC, AD = range(3)
 
+    _order_tranformation = {
+        OrderType.DESC: ('-%s',),
+        OrderType.ASC: ('%s', ),
+        OrderType.AD: ('-%s', ),
+    }
+
     def __init__(self, order_kind=OrderType.DESC):
         keytype_tranform = {
             self.OrderType.DESC: OrzField.KeyType.DESC,
@@ -40,8 +49,12 @@ class OrzPrimaryField(OrzField):
             self.OrderType.AD: OrzField.KeyType.AD,
         }
         super(OrzPrimaryField, self).__init__(keytype_tranform[order_kind])
+        self.order_kind = order_kind
 
-
+    def as_default_order_key(self):
+        if self.name is None:
+            raise ValueError('name is needed')
+        return tuple([i % self.name for i in self._order_tranformation[self.order_kind]])
 
 def orz_get_multi(func):
     @wraps(func)

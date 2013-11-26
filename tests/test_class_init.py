@@ -9,10 +9,23 @@ class TestClassInit(TestCase):
             bar = OrzField()
         self.klass = ORZFieldTest
 
+    def test_as_order_key(self):
+        NAME = 'hello'
+        assertions = {
+            OrzPrimaryField.OrderType.DESC: ("-%s" % NAME, ),
+            OrzPrimaryField.OrderType.ASC: ("%s" % NAME, ),
+            OrzPrimaryField.OrderType.AD: ("-%s" % NAME, ),
+        }
+
+        for order_t, asst in assertions.iteritems():
+            foo = OrzPrimaryField(order_t)
+            foo.name = NAME
+            self.assertEqual(foo.as_default_order_key(), asst)
+
     def test_basic_primary_field(self):
-        field_name, field = _initialize_primary_field(self.klass)
+        field = _initialize_primary_field(self.klass)
         self.assertTrue(hasattr(self.klass, 'id'))
-        self.assertEqual(field_name, 'id')
+        self.assertEqual(field.name, 'id')
         self.assertTrue(isinstance(self.klass.id, OrzPrimaryField))
 
     def test_customized_primary_field(self):
@@ -21,7 +34,7 @@ class TestClassInit(TestCase):
             foo = OrzField()
             bar = OrzField()
 
-        field_name, field = _initialize_primary_field(ORZFieldTest)
+        field = _initialize_primary_field(ORZFieldTest)
         self.assertTrue(hasattr(ORZFieldTest, 'foo_bar'))
-        self.assertEqual(field_name, 'foo_bar')
+        self.assertEqual(field.name, 'foo_bar')
         self.assertTrue(isinstance(ORZFieldTest.foo_bar, OrzPrimaryField))

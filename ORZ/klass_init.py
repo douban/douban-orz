@@ -36,11 +36,13 @@ def method_combine(func, reserved_args=tuple()):
 def _initialize_primary_field(cls):
     for i, v in cls.__dict__.iteritems():
         if isinstance(v, OrzPrimaryField):
-            return i, v
+            v.name = i
+            return v
     else:
         v = OrzPrimaryField()
+        v.name = "id"
         setattr(cls, 'id', v)
-        return "id", v
+        return v
 
 
 def _collect_fields(cls):
@@ -58,13 +60,14 @@ def _collect_order_combs(cls):
     return extra_orders
 
 def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str=True):
-    _initialize_primary_field(cls)
+    primary_field = _initialize_primary_field(cls)
     db_fields, raw_db_fields = zip(*_collect_fields(cls))
     extra_orders = _collect_order_combs(cls)
 
 
     cls.objects = CachedOrmManager(table_name,
                                    cls,
+                                   primary_field,
                                    raw_db_fields,
                                    sqlstore=sqlstore,
                                    mc=mc,
