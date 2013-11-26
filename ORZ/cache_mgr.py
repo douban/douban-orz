@@ -84,8 +84,8 @@ class CachedOrmManager(object):
             config = self.config_mgr.lookup_gets_by(conditions.keys(), order_keys)
             if amount is not None and \
                 self._amount_check(amount, start_limit):
-                ids = sql_executor.get_ids(conditions, _tart_limit, order_keys)
-                return [self.cls(**sql_executor.get(i)) for i in ids]
+                ids = self.sql_executor.get_ids(conditions, _tart_limit, order_keys)
+                return [self.cls(**self.sql_executor.get(i)) for i in ids]
 
             _start_limit = (0, amount) if amount is not None else tuple()
 
@@ -97,15 +97,15 @@ class CachedOrmManager(object):
                 ids = None
 
             if ids is not None:
-                ret = self._get_and_refresh(sql_executor, ids)
+                ret = self._get_and_refresh(self.sql_executor, ids)
             else:
-                ids = sql_executor.get_ids(conditions, _start_limit, order_keys)
+                ids = self.sql_executor.get_ids(conditions, _start_limit, order_keys)
                 self.mc.set(ck, ids, ONE_HOUR)
-                ret = self._get_and_refresh(sql_executor, ids, force_flush)
+                ret = self._get_and_refresh(self.sql_executor, ids, force_flush)
 
         else:
-            ids = sql_executor.get_ids(conditions, start_limit, order_keys)
-            ret = [self.cls(**sql_executor.get(i)) for i in ids]
+            ids = self.sql_executor.get_ids(conditions, start_limit, order_keys)
+            ret = [self.cls(**self.sql_executor.get(i)) for i in ids]
 
         if start_limit:
             print start_limit
