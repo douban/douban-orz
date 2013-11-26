@@ -29,13 +29,6 @@ class OrzField(object):
         self.as_key = as_key
         self.default = default
 
-# def orz_custom_cache(*related_key_names):
-#     def __(func):
-#        def _(cls, *a, **kw):
-#            return cls.objects.gets_custom(func, a, kw)
-#        _.related_key_names = related_key_names
-#        return _
-#     return __
 
 def orz_get_multi(func):
     @wraps(func)
@@ -45,9 +38,3 @@ def orz_get_multi(func):
 
 if __name__=='__main__':
     pass
-    # for i in A.__dict__:
-    #     print i
-    # A.name = OrmItem('name')
-    # a = A()
-    # a.name = 10
-    # print a.name
