@@ -29,6 +29,19 @@ class OrzField(object):
         self.as_key = as_key
         self.default = default
 
+class OrzPrimaryField(OrzField):
+    class OrderType(object):
+        DESC, ASC, AD = range(3)
+
+    def __init__(self, order_kind=OrderType.DESC):
+        keytype_tranform = {
+            self.OrderType.DESC: OrzField.KeyType.DESC,
+            self.OrderType.ASC: OrzField.KeyType.ASC,
+            self.OrderType.AD: OrzField.KeyType.AD,
+        }
+        super(OrzPrimaryField, self).__init__(keytype_tranform[order_kind])
+
+
 
 def orz_get_multi(func):
     @wraps(func)
