@@ -36,7 +36,7 @@ class CachedOrmManager(object):
         self.config_mgr.generate_basic_configs(kv_to_ids_ck,
                                                [f.name for f in db_fields if f.as_key], orders)
 
-        self.default_vals = dict((k.name, k.default) for k in db_fields if k.default is not None)
+        self.default_vals = dict((k.name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
 
     def __getattr__(self, field):
         return getattr(self.sql_executor, field)

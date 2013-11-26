@@ -1,3 +1,4 @@
+import sys
 from functools import wraps
 
 class OrmItem(object):
@@ -19,10 +20,11 @@ class OrmItem(object):
 
 
 class OrzField(object):
+    NO_DEFAULT = sys.maxint
     class KeyType(object):
         NOT_INDEX, DESC, ASC, AD = range(4)
 
-    def __init__(self, as_key=KeyType.NOT_INDEX, default=None):
+    def __init__(self, as_key=KeyType.NOT_INDEX, default=NO_DEFAULT):
         self.name = None
         self.as_key = as_key
         self.default = default

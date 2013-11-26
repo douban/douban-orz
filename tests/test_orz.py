@@ -51,6 +51,7 @@ class Dummy(object):
     content = OrzField(default='hello world')
     flag = OrzField(as_key=OrzField.KeyType.ASC, default=False)
     extra = OrzField(default=1)
+    null_field = OrzField(default=None)
 
     class OrzMeta:
         extra_orders = (('-extra', 'ep_num'), )
@@ -93,6 +94,7 @@ class TestOrz(TestCase):
                            `flag` smallint(1) unsigned NOT NULL,
                            `content` varchar(100) NOT NULL,
                            `extra` int(10) unsigned NOT NULL,
+                           `null_field` int(10) unsigned,
                            PRIMARY KEY (`id`),
                            KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
             initted = True
@@ -105,8 +107,9 @@ class TestOrz(TestCase):
         z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh', extra_args=10)
         self.assertTrue(z.after_created)
         self.assertTrue(z.extra_args, 10)
-        (id, subject_id, ep_num), = store.execute('''select id, subject_id, ep_num from test_orz where subject_id=10''')
-        self.assertEqual((z.id, z.subject_id, ep_num), (str(id), str(subject_id), ep_num))
+        self.assertEqual(z.null_field, None)
+        (id, subject_id, ep_num, null_field), = store.execute('''select id, subject_id, ep_num, null_field from test_orz where subject_id=10''')
+        self.assertEqual((z.id, z.subject_id, ep_num, None), (str(id), str(subject_id), ep_num, null_field))
 
         z = Dummy.create(id=5, subject_id=10, ep_num=10, content='hheheheh1')
         self.assertEqual(z.id, '5')
