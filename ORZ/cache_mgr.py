@@ -111,8 +111,10 @@ class CachedOrmManager(object):
         return ret
 
     def create(self, raw_kwargs):
-        kwargs = self.default_vals.copy()
+        kwargs = []
+        kwargs = dict((k, (v() if callable(v) else v)) for k, v in self.default_vals.iteritems())
         kwargs.update(raw_kwargs)
+
         cks = self._get_cks(kwargs, self.db_field_names)
         self.mc.delete_multi(cks)
 

@@ -53,6 +53,7 @@ class Dummy(object):
     extra = OrzField(default=1)
     null_field = OrzField(default=None)
     output_field = OrzField(output_filter=str, default=10)
+    callable_field = OrzField(default=lambda :10)
 
     class OrzMeta:
         order_combs = (('-extra', 'ep_num'), )
@@ -97,6 +98,7 @@ class TestOrz(TestCase):
                            `extra` int(10) unsigned NOT NULL,
                            `null_field` int(10) unsigned,
                            `output_field` int(10) unsigned,
+                           `callable_field` int(10) unsigned,
                            PRIMARY KEY (`id`),
                            KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
             initted = True
@@ -108,6 +110,7 @@ class TestOrz(TestCase):
     def test_create(self):
         z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh', extra_args=10)
         self.assertTrue(z.after_created)
+        self.assertEqual(z.callable_field, 10)
         self.assertTrue(z.extra_args, 10)
         self.assertEqual(z.null_field, None)
         (id, subject_id, ep_num, null_field), = store.execute('''select id, subject_id, ep_num, null_field from test_orz where subject_id=10''')
