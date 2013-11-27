@@ -4,14 +4,12 @@ from copy import deepcopy
 
 
 class SqlExecutor(object):
-    def __init__(self, table_name, db_fields, sqlstore):
+    def __init__(self, table_name, primary_field_name, db_fields, sqlstore):
         self.sqlstore = sqlstore
         self.conditions = {}
+        self.primary_field_name = primary_field_name
         self.db_fields = db_fields
         self.table_name = table_name
-        self.start_limit = ()
-        self.order_key = (('id', 'desc'),)
-        self.org_order_key = ('-id', )
         #self.dirty_fields = set()
 
     def create(self, field_data):
@@ -23,17 +21,17 @@ class SqlExecutor(object):
         self.sqlstore.commit()
         return _id
 
-    def update_row(self, id, field_data):
+    def update_row(self, primary_field, field_data):
         set_sql, v = self._sql_statement('SET',
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
-        statement = "update %s %s where id = %s" % (self.table_name, set_sql, id)
+        statement = "update %s %s where %s = %s" % (self.table_name, set_sql, self.primary_field_name, primary_field)
         self.sqlstore.execute(statement, tuple(v))
         self.sqlstore.commit()
 
-    def delete(self, id):
-        statement = 'delete from %s where id = %%s' % self.table_name
-        self.sqlstore.execute(statement, id)
+    def delete(self, primary_field):
+        statement = 'delete from %s where %s = %%s' % (self.table_name, self.primary_field_name)
+        self.sqlstore.execute(statement, primary_field)
         self.sqlstore.commit()
 
     def _transform_order_keys(self, keys):
@@ -55,16 +53,16 @@ class SqlExecutor(object):
                                         [("%s=%%s" % k, v) for k, v in conditions.iteritems()],
                                         ' and ')
 
-        statement = "select id from %s %s %s %s" % \
-                        (self.table_name, where_sql, order_sql, limit_sql)
+        statement = "select %s from %s %s %s %s" % \
+                        (self.primary_field_name, self.table_name, where_sql, order_sql, limit_sql)
         ids = map(itemgetter(0), self.sqlstore.execute(statement, tuple(chain(v1, v3))))
         return ids
 
-    def get(self, id):
+    def get(self, primary_field):
             #BIG TODO for non exist obj
-        fields = ['id'] + list(self.db_fields)
-        statement = "select %s from %s where id=%%s" % (",".join(fields), self.table_name)
-        ret = self.sqlstore.execute(statement, id)
+        fields = [self.primary_field_name] + list(self.db_fields)
+        statement = "select %s from %s where %s=%%s" % (",".join(fields), self.table_name, self.primary_field_name, )
+        ret = self.sqlstore.execute(statement, primary_field)
         if not ret:
             return None
         return dict(zip(fields+['to_create'], list(ret[0])+[False]))

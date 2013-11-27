@@ -3,7 +3,8 @@ MEMCACHED = {
     'disabled' : False,
 }
 
-# from corelib.config import MEMCACHED
+from unittest import TestCase
+
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "stub"))
@@ -25,25 +26,12 @@ DATABASE = {
         'show_warnings': True,
     }
 }
-
-from unittest import TestCase
-
 store = store_from_config(DATABASE)
 mc.clear()
-#lc.clear()
+
+from ORZ import orz_decorate, OrzField, orz_get_multi, OrzPrimaryField
 
 
-# cursor.connection.commit()
-# cursor.execute('''DROP TABLE IF EXISTS `test_orz`;
-#                CREATE TABLE `test_orz`
-#                ( `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-#                `subject_id` int(10) unsigned NOT NULL,
-#                `ep_num` int(10) unsigned NOT NULL,
-#                `content` varchar(100) NOT NULL,
-#                PRIMARY KEY (`id`),
-#                KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
-
-from ORZ import orz_decorate, OrzField, orz_get_multi
 @orz_decorate('test_orz', sqlstore=store, mc=mc)
 class Dummy(object):
     subject_id = OrzField(as_key=OrzField.KeyType.ASC)
@@ -278,3 +266,23 @@ class TestOrz(TestCase):
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11)), 10)
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11, force_flush=True)), 9)
 
+# class TestCustomizedPrimaryKey(TestCase):
+#     @orz_decorate('test_orz', sqlstore=store, mc=mc)
+#     class Dummy(object):
+#         subject_id = OrzField(as_key=OrzField.KeyType.ASC)
+#         ep_num = OrzPrimaryField()
+
+#     def setUp(self):
+#         cursor = store.get_cursor()
+#         cursor.execute('''DROP TABLE IF EXISTS `test_orz`''')
+#         cursor.delete_without_where = True
+#         cursor.execute('''
+#                        CREATE TABLE `test_orz`
+#                        (
+#                        `subject_id` int(10) unsigned NOT NULL,
+#                        `ep_num` int(10) unsigned NOT NULL,
+#                        PRIMARY KEY (`ep_num`)
+#                        ) ENGINE=MEMORY''')
+
+#     def tearDown(self):
+#         mc.clear()

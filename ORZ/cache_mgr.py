@@ -25,11 +25,11 @@ class CachedOrmManager(object):
     def __init__(self, table_name, cls, db_fields, sqlstore, mc,
                  cache_ver='', order_combs=tuple()):
         self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
-        self.sql_executor = SqlExecutor(table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
         self.mc = mc
         self.db_field_names = [i.name for i in db_fields]
         self.primary_field = (i for i in db_fields if isinstance(i, OrzPrimaryField)).next()
+        self.sql_executor = SqlExecutor(table_name, self.primary_field.name,  [f.name for f in db_fields], sqlstore)
         kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
         self.config_mgr = CacheConfigMgr()
 
@@ -39,14 +39,14 @@ class CachedOrmManager(object):
 
         self.default_vals = dict((k.name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
 
-    def _get_and_refresh(self, sql_executor, ids, force_flush=False):
+    def _get_and_refresh(self, sql_executor, primary_field_vals, force_flush=False):
         res = []
         if not force_flush:
-            di = dict(zip(ids, self.mc.get_list([self.single_obj_ck + str(i) for i in ids])))
+            di = dict(zip(primary_field_vals, self.mc.get_list([self.single_obj_ck + str(i) for i in primary_field_vals])))
         else:
             di = {}
 
-        for i in ids:
+        for i in primary_field_vals:
             if di.get(i) is not None:
                 obj = di[i]
             else:
@@ -55,14 +55,14 @@ class CachedOrmManager(object):
             res.append(obj)
         return res
 
-    def get(self, id, force_flush=False):
+    def get(self, id=None, force_flush=False, **kw):
         ret = self.gets_by(id=id, force_flush=force_flush)
         if len(ret) == 0:
             return None
         return ret[0]
 
-    def get_multiple_ids(self, ids):
-        return self._get_and_refresh(self.sql_executor, ids)
+    def get_multiple_ids(self, primary_field_vals):
+        return self._get_and_refresh(self.sql_executor, primary_field_vals)
 
     def _amount_check(self, amount, start_limit):
         if not start_limit:
@@ -82,28 +82,28 @@ class CachedOrmManager(object):
             config = self.config_mgr.lookup_gets_by(conditions.keys(), order_keys)
             if amount is not None and \
                 self._amount_check(amount, start_limit):
-                ids = self.sql_executor.get_ids(conditions, _tart_limit, order_keys)
-                return [self.cls(**self.sql_executor.get(i)) for i in ids]
+                primary_field_vals = self.sql_executor.get_ids(conditions, _tart_limit, order_keys)
+                return [self.cls(**self.sql_executor.get(i)) for i in primary_field_vals]
 
             _start_limit = (0, amount) if amount is not None else tuple()
 
             ck = config.to_string(conditions)
 
             if not force_flush:
-                ids = self.mc.get(ck)
+                primary_field_vals = self.mc.get(ck)
             else:
-                ids = None
+                primary_field_vals = None
 
-            if ids is not None:
-                ret = self._get_and_refresh(self.sql_executor, ids)
+            if primary_field_vals is not None:
+                ret = self._get_and_refresh(self.sql_executor, primary_field_vals)
             else:
-                ids = self.sql_executor.get_ids(conditions, _start_limit, order_keys)
-                self.mc.set(ck, ids, ONE_HOUR)
-                ret = self._get_and_refresh(self.sql_executor, ids, force_flush)
+                primary_field_vals = self.sql_executor.get_ids(conditions, _start_limit, order_keys)
+                self.mc.set(ck, primary_field_vals, ONE_HOUR)
+                ret = self._get_and_refresh(self.sql_executor, primary_field_vals, force_flush)
 
         else:
-            ids = self.sql_executor.get_ids(conditions, start_limit, order_keys)
-            ret = [self.cls(**self.sql_executor.get(i)) for i in ids]
+            primary_field_vals = self.sql_executor.get_ids(conditions, start_limit, order_keys)
+            ret = [self.cls(**self.sql_executor.get(i)) for i in primary_field_vals]
 
         if start_limit:
             start, limit = start_limit
