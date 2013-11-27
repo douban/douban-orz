@@ -52,6 +52,7 @@ class Dummy(object):
     flag = OrzField(as_key=OrzField.KeyType.ASC, default=False)
     extra = OrzField(default=1)
     null_field = OrzField(default=None)
+    output_field = OrzField(output_filter=str, default=10)
 
     class OrzMeta:
         extra_orders = (('-extra', 'ep_num'), )
@@ -95,6 +96,7 @@ class TestOrz(TestCase):
                            `content` varchar(100) NOT NULL,
                            `extra` int(10) unsigned NOT NULL,
                            `null_field` int(10) unsigned,
+                           `output_field` int(10) unsigned,
                            PRIMARY KEY (`id`),
                            KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
             initted = True
@@ -118,11 +120,12 @@ class TestOrz(TestCase):
 
 
     def test_gets_by(self):
-        li = [Dummy.create(subject_id=10, ep_num=ep_num, content='hheheheh') for ep_num in range(10)]
+        li = [Dummy.create(subject_id=10, ep_num=ep_num, content='hheheheh', output_field=10) for ep_num in range(10)]
         z = li[-1]
         m = Dummy.gets_by(subject_id=10)
         self.assertEqual((z.id, z.subject_id), (m[0].id, m[0].subject_id))
         self.assertEqual([int(i.id) for i in m], range(10, 0, -1))
+        self.assertEqual(li[-1].output_field, str(10))
 
     def test_save(self):
         z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh')

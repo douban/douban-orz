@@ -3,8 +3,9 @@ from functools import wraps
 from itertools import chain
 
 class OrmItem(object):
-    def __init__(self, field_name):
+    def __init__(self, field_name, output_filter=lambda x: x):
         self.field_name = field_name
+        self.output_filter = output_filter
 
     def __set__(self, obj, value):
         value = int(value) if type(value) == bool else value
@@ -17,7 +18,7 @@ class OrmItem(object):
         setattr(obj, "hidden____" + self.field_name, value)
 
     def __get__(self, obj, objtype):
-        return getattr(obj, "hidden____" + self.field_name, None)
+        return self.output_filter(getattr(obj, "hidden____" + self.field_name, None))
 
 
 class OrzField(object):
@@ -27,10 +28,12 @@ class OrzField(object):
     class KeyType(object):
         NOT_INDEX, DESC, ASC, AD = range(4)
 
-    def __init__(self, as_key=KeyType.NOT_INDEX, default=NO_DEFAULT):
+    def __init__(self, as_key=KeyType.NOT_INDEX, default=NO_DEFAULT, output_filter=lambda x:x):
         self.name = None
         self.as_key = as_key
         self.default = default
+        self.output_filter = output_filter
+
 
 class OrzPrimaryField(OrzField):
     class OrderType(object):

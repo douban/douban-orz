@@ -91,8 +91,8 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
     cls.count_by = cls.objects.count_by
     cls.get_by = cls.objects.get
 
-    for k in db_fields:
-        setattr(cls, k,  OrmItem(k))
+    for f in raw_db_fields:
+        setattr(cls, f.name, OrmItem(f.name, f.output_filter))
     return cls
 
 
