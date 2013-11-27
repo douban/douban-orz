@@ -278,9 +278,3 @@ class TestOrz(TestCase):
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11)), 10)
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11, force_flush=True)), 9)
 
-
-
-    # def test_custom(self):
-    #     return Dummy.get_hello(subject_id=10)
-
-
