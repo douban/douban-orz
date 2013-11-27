@@ -34,15 +34,19 @@ def method_combine(func, reserved_args=tuple()):
 
 
 def _initialize_primary_field(cls):
-    for i, v in cls.__dict__.iteritems():
-        if isinstance(v, OrzPrimaryField):
-            v.name = i
-            return v
-    else:
+    primary_fields = [(i, v) for i, v in cls.__dict__.iteritems() if isinstance(v, OrzPrimaryField)]
+    if len(primary_fields) > 1:
+        raise ValueError("one primary_field only")
+
+    if len(primary_fields) == 0:
         v = OrzPrimaryField()
         v.name = "id"
         setattr(cls, 'id', v)
         return v
+    else:
+        field_name, field = primary_fields[0]
+        field.name = field_name
+        return field
 
 
 def _collect_fields(cls):
