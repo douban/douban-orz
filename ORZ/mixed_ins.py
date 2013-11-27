@@ -39,7 +39,6 @@ def init(self, to_create=True, *a, **kw):
     self._initted = False
     self.dirty_fields = set()
     for i in self.db_fields:
-        prev_val = kw.pop(i)
-        val = self.id_casting(prev_val) if (i=='id' or i.endswith('_id')) and prev_val is not None else prev_val
+        val = kw.pop(i)
         setattr(self, i, val)
     self._initted = True

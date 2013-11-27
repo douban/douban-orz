@@ -49,10 +49,12 @@ def _initialize_primary_field(cls):
         return field
 
 
-def _collect_fields(cls):
+def _collect_fields(cls, id2str):
     for i, v in cls.__dict__.iteritems():
         if isinstance(v, OrzField):
             v.name = i
+            if id2str and i=='id' or i.endswith("_id"):
+                v.output_filter = str
             yield (i, v)
 
 
@@ -65,7 +67,7 @@ def _collect_order_combs(cls):
 
 def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str=True):
     primary_field = _initialize_primary_field(cls)
-    db_fields, raw_db_fields = zip(*_collect_fields(cls))
+    db_fields, raw_db_fields = zip(*_collect_fields(cls, id2str))
     extra_orders = _collect_order_combs(cls)
 
 
@@ -78,7 +80,6 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
                                    extra_orders=extra_orders)
 
 
-    cls.id_casting = int if not id2str else str
     cls.save = method_combine(save)
     cls.create = classmethod(method_combine(create, db_fields))
     cls.delete = method_combine(delete)
