@@ -55,7 +55,7 @@ class Dummy(object):
     output_field = OrzField(output_filter=str, default=10)
 
     class OrzMeta:
-        extra_orders = (('-extra', 'ep_num'), )
+        order_combs = (('-extra', 'ep_num'), )
 
     @classmethod
     def before_create(cls, **kw):

@@ -23,7 +23,7 @@ def make_orders(fields):
 
 class CachedOrmManager(object):
     def __init__(self, table_name, cls, db_fields, sqlstore, mc,
-                 cache_ver='', extra_orders=tuple()):
+                 cache_ver='', order_combs=tuple()):
         self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
         self.sql_executor = SqlExecutor(table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
@@ -33,7 +33,7 @@ class CachedOrmManager(object):
         kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
         self.config_mgr = CacheConfigMgr()
 
-        orders = make_orders(db_fields) + extra_orders
+        orders = make_orders(db_fields) + order_combs
         self.config_mgr.generate_basic_configs(kv_to_ids_ck,
                                                [f.name for f in db_fields if f.as_key], orders)
 

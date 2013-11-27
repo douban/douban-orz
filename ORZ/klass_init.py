@@ -2,6 +2,7 @@
 from .cache_mgr import CachedOrmManager
 from .mixed_ins import *
 from .base_mgr import OrmItem, OrzField, OrzPrimaryField
+import warnings
 
 
 def _split_dictonary(di, predicate):
@@ -60,15 +61,27 @@ def _collect_fields(cls, id2str):
 
 def _collect_order_combs(cls):
     if hasattr(cls, "OrzMeta"):
-        extra_orders = tuple([(tuple(i) if type(i)==str else i) for i in getattr(cls.OrzMeta, 'extra_orders', tuple())])
+        declarations = tuple()
+
+        if hasattr(cls.OrzMeta, 'extra_orders'):
+            declarations = getattr(cls.OrzMeta, "extra_orders")
+            warnings.warn("extra_orders is deprecated; use order_combs instead.")
+
+        if hasattr(cls.OrzMeta, 'order_combs'):
+            if declarations:
+                warnings.warn("order_combs will override extra_orders. use order_combs only")
+            declarations = getattr(cls.OrzMeta, "order_combs")
+
+        order_combs = tuple(((i, ) if type(i) is str else i) for i in declarations)
     else:
-        extra_orders = tuple()
-    return extra_orders
+        order_combs = tuple()
+    return order_combs
+
 
 def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str=True):
     primary_field = _initialize_primary_field(cls)
     db_fields, raw_db_fields = zip(*_collect_fields(cls, id2str))
-    extra_orders = _collect_order_combs(cls)
+    order_combs = _collect_order_combs(cls)
 
 
     cls.objects = CachedOrmManager(table_name,
@@ -77,7 +90,7 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
                                    sqlstore=sqlstore,
                                    mc=mc,
                                    cache_ver=cache_ver,
-                                   extra_orders=extra_orders)
+                                   order_combs=order_combs)
 
 
     cls.save = method_combine(save)
