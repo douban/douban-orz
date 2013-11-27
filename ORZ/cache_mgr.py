@@ -20,15 +20,16 @@ def make_orders(fields):
     }
     return tuple(reduce(lambda x, y:mapper[y.as_key](x, y), fields, []))
 
+
 class CachedOrmManager(object):
-    # TODO mgr.db_fields is sql_executor's
-    def __init__(self, table_name, cls, primary_field, db_fields, sqlstore, mc,
+    def __init__(self, table_name, cls, db_fields, sqlstore, mc,
                  cache_ver='', extra_orders=tuple()):
         self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
         self.sql_executor = SqlExecutor(table_name, [f.name for f in db_fields], sqlstore)
         self.cls = cls
         self.mc = mc
-        self.primary_field = primary_field
+        self.db_field_names = [i.name for i in db_fields]
+        self.primary_field = (i for i in db_fields if isinstance(i, OrzPrimaryField)).next()
         kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
         self.config_mgr = CacheConfigMgr()
 
@@ -37,9 +38,6 @@ class CachedOrmManager(object):
                                                [f.name for f in db_fields if f.as_key], orders)
 
         self.default_vals = dict((k.name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
-
-    def __getattr__(self, field):
-        return getattr(self.sql_executor, field)
 
     def _get_and_refresh(self, sql_executor, ids, force_flush=False):
         res = []
@@ -115,10 +113,10 @@ class CachedOrmManager(object):
     def create(self, raw_kwargs):
         kwargs = self.default_vals.copy()
         kwargs.update(raw_kwargs)
-        cks = self._get_cks(kwargs, self.db_fields)
+        cks = self._get_cks(kwargs, self.db_field_names)
         self.mc.delete_multi(cks)
 
-        sql_data = dict((field, kwargs.pop(field)) for field in self.db_fields if field in kwargs)
+        sql_data = dict((field, kwargs.pop(field)) for field in self.db_field_names if field in kwargs)
         _primary_field_val = self.sql_executor.create(sql_data)
 
         sql_data[self.primary_field.name] = _primary_field_val
@@ -136,7 +134,7 @@ class CachedOrmManager(object):
 
     def save(self, ins):
         cks = []
-        datum = dict((f, getattr(ins, "hidden____org_" + f)) for f in self.db_fields)
+        datum = dict((f, getattr(ins, "hidden____org_" + f)) for f in self.db_field_names)
         cks.extend(self._get_cks(datum, ins.dirty_fields))
         cks.extend(self._get_cks(ins, ins.dirty_fields))
 
@@ -147,7 +145,7 @@ class CachedOrmManager(object):
         self.sql_executor.update_row(ins.id, sql_data)
 
     def delete(self, ins):
-        cks = self._get_cks(ins, [self.primary_field.name]+self.db_fields)
+        cks = self._get_cks(ins, [self.primary_field.name]+self.db_field_names)
         self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
 
         self.sql_executor.delete(ins.id)

@@ -71,7 +71,6 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
 
     cls.objects = CachedOrmManager(table_name,
                                    cls,
-                                   primary_field,
                                    raw_db_fields,
                                    sqlstore=sqlstore,
                                    mc=mc,
