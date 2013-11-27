@@ -121,9 +121,7 @@ class CachedOrmManager(object):
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_field_names if field in kwargs)
         _primary_field_val = self.sql_executor.create(sql_data)
 
-        sql_data[self.primary_field.name] = _primary_field_val
-
-        return self.cls(**sql_data)
+        return self.cls(**self.sql_executor.get(_primary_field_val))
 
     def _get_cks(self, data_src, fields):
         cks = []
@@ -145,6 +143,13 @@ class CachedOrmManager(object):
 
         sql_data = dict((field, getattr(ins, field)) for field in ins.dirty_fields)
         self.sql_executor.update_row(ins.id, sql_data)
+
+        new_ins = self.get(id=ins.id)
+
+        for i in self.db_field_names:
+            setattr(ins, i, getattr(new_ins, i))
+
+        ins.dirty_fields = set()
 
     def delete(self, ins):
         cks = self._get_cks(ins, [self.primary_field.name]+self.db_field_names)
@@ -169,13 +174,3 @@ class CachedOrmManager(object):
             return ret
         else:
             return c
-
-    def gets_custom(self, func, a, kw):
-        func_name = func.func_name
-        cfg = self.config_mgr.lookup_custom([func_name,]+kw.keys())
-        ck = cfg.to_string(kw)
-        ret = self.mc.get(ck)
-        if ret is None:
-            ret = func(self.cls, *a, **kw)
-            self.mc.set(ck, ret)
-        return ret

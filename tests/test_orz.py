@@ -266,6 +266,51 @@ class TestOrz(TestCase):
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11)), 10)
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11, force_flush=True)), 9)
 
+
+@orz_decorate('test_orz', sqlstore=store, mc=mc)
+class DummyCS(object):
+    subject_id = OrzField()
+    updated_at = OrzField()
+    ep_num = OrzField()
+
+class TestFlushGetAfterCreationAndSaving(TestCase):
+
+    def setUp(self):
+        cursor = store.get_cursor()
+        cursor.execute('''DROP TABLE IF EXISTS `test_orz`''')
+        cursor.delete_without_where = True
+        cursor.execute('''
+                       CREATE TABLE `test_orz`
+                       (
+                       `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+                       `ep_num` int(10) unsigned NOT NULL,
+                       `subject_id` int(10) unsigned DEFAULT 1001 NOT NULL,
+                       `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                       PRIMARY KEY (`id`)
+                       ) ENGINE=MEMORY AUTO_INCREMENT=1''')
+
+    def tearDown(self):
+        mc.clear()
+
+    def test_create(self):
+        from datetime import datetime, timedelta
+        a = DummyCS.create(ep_num=1)
+        now = datetime.now()
+        self.assertEqual(a.subject_id, '1001')
+        self.assertTrue(now - a.updated_at < timedelta(seconds=1))
+
+    def test_save(self):
+        import time
+        a = DummyCS.create(ep_num=1)
+        old_updated_at = a.updated_at
+
+        time.sleep(1)
+        a.ep_num = 10
+        a.save()
+
+        self.assertTrue(a.updated_at > old_updated_at)
+        self.assertEqual(DummyCS.get_by(id=a.id).updated_at, a.updated_at)
+
 # class TestCustomizedPrimaryKey(TestCase):
 #     @orz_decorate('test_orz', sqlstore=store, mc=mc)
 #     class Dummy(object):
@@ -273,16 +318,6 @@ class TestOrz(TestCase):
 #         ep_num = OrzPrimaryField()
 
 #     def setUp(self):
-#         cursor = store.get_cursor()
-#         cursor.execute('''DROP TABLE IF EXISTS `test_orz`''')
-#         cursor.delete_without_where = True
-#         cursor.execute('''
-#                        CREATE TABLE `test_orz`
-#                        (
-#                        `subject_id` int(10) unsigned NOT NULL,
-#                        `ep_num` int(10) unsigned NOT NULL,
-#                        PRIMARY KEY (`ep_num`)
-#                        ) ENGINE=MEMORY''')
 
 #     def tearDown(self):
 #         mc.clear()
