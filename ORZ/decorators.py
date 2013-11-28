@@ -3,7 +3,7 @@ from os.path import dirname, join
 import sys
 sys.path.append(join(dirname(__file__), ".."))
 
-from .klass_init import cached_wrapper
+from .deprecated import cached_wrapper
 
 
 def _deco(func):
