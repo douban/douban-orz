@@ -1,34 +1,6 @@
-MEMCACHED = {
-    'servers' : [],
-    'disabled' : False,
-}
+from unittest import TestCase, skip
 
-from unittest import TestCase
-
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "stub"))
-
-from douban.mc import mc_from_config
-from douban.mc.wrapper import LocalCached
-mc = LocalCached(mc_from_config(MEMCACHED))
-
-from douban.sqlstore import store_from_config
-
-DATABASE = {
-    'farms': {
-        "luz_farm": {
-            "master": "localhost:test_vagrant9010:eye:sauron",
-            "tables": ["*"],
-            },
-    },
-    'options': {
-        'show_warnings': True,
-    }
-}
-store = store_from_config(DATABASE)
-mc.clear()
-
+from .env_init import store, mc
 from ORZ import orz_decorate, OrzField, orz_get_multi, OrzPrimaryField
 
 
@@ -67,29 +39,24 @@ class Dummy(object):
         return [i for i, in store.execute('select id from test_orz where ep_num!=%s', non_targeted_ep_num)]
 
 
-initted = False
-
-class TestOrz(TestCase):
+class TestOldOrz(TestCase):
     def setUp(self):
-        global initted
-        if not initted:
-            cursor = store.get_cursor()
-            cursor.execute('''DROP TABLE IF EXISTS `test_orz`''')
-            cursor.delete_without_where = True
-            cursor.execute('''
-                           CREATE TABLE `test_orz`
-                           ( `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                           `subject_id` int(10) unsigned NOT NULL,
-                           `ep_num` int(10) unsigned NOT NULL,
-                           `flag` smallint(1) unsigned NOT NULL,
-                           `content` varchar(100) NOT NULL,
-                           `extra` int(10) unsigned NOT NULL,
-                           `null_field` int(10) unsigned,
-                           `output_field` int(10) unsigned,
-                           `callable_field` int(10) unsigned,
-                           PRIMARY KEY (`id`),
-                           KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
-            initted = True
+        cursor = store.get_cursor()
+        cursor.execute('''DROP TABLE IF EXISTS `test_orz`''')
+        cursor.delete_without_where = True
+        cursor.execute('''
+                       CREATE TABLE `test_orz`
+                       ( `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+                       `subject_id` int(10) unsigned NOT NULL,
+                       `ep_num` int(10) unsigned NOT NULL,
+                       `flag` smallint(1) unsigned NOT NULL,
+                       `content` varchar(100) NOT NULL,
+                       `extra` int(10) unsigned NOT NULL,
+                       `null_field` int(10) unsigned,
+                       `output_field` int(10) unsigned,
+                       `callable_field` int(10) unsigned,
+                       PRIMARY KEY (`id`),
+                       KEY `idx_subject` (`subject_id`, `ep_num`, `id`)) ENGINE=MEMORY AUTO_INCREMENT=1''')
 
     def tearDown(self):
         store.get_cursor().execute('truncate table `test_orz`')
