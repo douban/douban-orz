@@ -150,7 +150,10 @@ class OrzBase(object):
     @__detached_proof
     def delete(self):
         self.before_delete()
+
         self.objects.delete(self)
+
+        self._detached = True
         self.after_delete()
 
     def __getstate__(self):

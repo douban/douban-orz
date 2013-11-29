@@ -199,6 +199,20 @@ class TestNewOrz(TestCase):
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11)), 10)
         self.assertEqual(len(Dummy.gets_by(subject_id=11, ep_num=11, force_flush=True)), 9)
 
+    def test_detached(self):
+        a = Dummy.create(subject_id=10001, ep_num=11, content='hheheheh')
+        self.assertRaisesRegexp(AttributeError, "The save can't be called when the instance is detached",a.delete)
+
+        a = Dummy.create(subject_id=10002, ep_num=11, content='hheheheh')
+        self.assertRaisesRegexp(AttributeError, "The delete can't be called when the instance is detached",a.delete)
+
+        self.assertRaisesRegexp(AttributeError,
+                                "The save can't be called when the instance is detached",
+                                Dummy.create, subject_id=-2, ep_num=11, content='hheheheh')
+        self.assertRaisesRegexp(AttributeError,
+                                "The delete can't be called when the instance is detached",
+                                Dummy.create, subject_id=-3, ep_num=11, content='hheheheh')
+
 
 class DummyCS(OrzBase):
     __orz_table__ = 'test_orz'
@@ -276,6 +290,12 @@ class Dummy(OrzBase):
         if self.subject_id == '-1':
             raise ValueError
 
+        if self.subject_id == '-2':
+            self.save()
+
+        if self.subject_id == '-3':
+            self.delete()
+
     def after_create(self, extra_args=None):
         self.after_created = True
         self.extra_args = extra_args
@@ -285,6 +305,13 @@ class Dummy(OrzBase):
 
     def before_delete(self):
         mc.set('before_delete_test', True)
+
+    def after_delete(self):
+        if self.subject_id=='10001':
+            self.save()
+
+        if self.subject_id=='10002':
+            self.delete()
 
     @classmethod
     @orz_get_multi
