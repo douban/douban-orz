@@ -84,6 +84,8 @@ def try_func_call(obj, func_attr, *a, **kw):
     if hasattr(obj, func_attr):
         return getattr(obj, func_attr)(*a, **kw)
 
+def _detached_unavailable(func):
+    return func
 
 class OrzBase(object):
 
@@ -98,14 +100,19 @@ class OrzBase(object):
     class OrzMeta:
         cache_ver = ""
 
-    def __init__(self, to_create=True, *a, **kw):
+    def _refresh_db_fields(self, kw):
+        self.dirty_fields = set()
+        for i in self.db_fields:
+            val = kw.pop(i)
+            setattr(self, i, val)
+        self._initted = True
+
+    def __init__(self, to_create=False, detached=False, *a, **kw):
         self.to_create = to_create
+        self.detached = False
         if not to_create:
             self._initted = False
-            self.dirty_fields = set()
-            for i in self.db_fields:
-                val = kw.pop(i)
-                setattr(self, i, val)
+            self._refresh_db_fields(kw)
             self._initted = True
         else:
             self._initted = False
@@ -115,18 +122,21 @@ class OrzBase(object):
 
     @classmethod
     def create(cls, **kw):
-        ins = cls(to_create=True, **kw)
+        ins = cls(to_create=True, detached=False, **kw)
         reserved_kw, exclude_kw = _split_dictonary(kw, lambda k, _: k in cls.db_fields)
         try_func_call(cls, 'before_create', **kw)
-        ins = cls.objects.create(reserved_kw)
+        data = cls.objects.create(reserved_kw)
+        ins._refresh_db_fields(data)
         try_func_call(ins, 'after_create', **exclude_kw)
         return ins
 
+    @_detached_unavailable
     def save(self):
         try_func_call(self, 'before_save')
         self.objects.save(self)
         try_func_call(self, 'after_save')
 
+    @_detached_unavailable
     def delete(self):
         try_func_call(self, 'before_delete')
         self.objects.delete(self)
@@ -158,3 +168,4 @@ class OrzBase(object):
     @classmethod
     def count_by(cls, *a, **kw):
         return cls.objects.count_by(*a, **kw)
+

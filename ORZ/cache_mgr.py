@@ -121,7 +121,7 @@ class CachedOrmManager(object):
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_field_names if field in kwargs)
         _primary_field_val = self.sql_executor.create(sql_data)
 
-        return self.cls(**self.sql_executor.get(_primary_field_val))
+        return self.sql_executor.get(_primary_field_val)
 
     def _get_cks(self, data_src, fields):
         cks = []
