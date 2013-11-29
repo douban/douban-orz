@@ -272,9 +272,8 @@ class Dummy(OrzBase):
         id2str = True
         order_combs = (('-extra', 'ep_num'), )
 
-    @classmethod
-    def before_create(cls, **kw):
-        if kw['subject_id'] == -1:
+    def before_create(self, extra_args=None):
+        if self.subject_id == '-1':
             raise ValueError
 
     def after_create(self, extra_args=None):

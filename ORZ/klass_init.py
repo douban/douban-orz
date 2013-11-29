@@ -28,6 +28,7 @@ def _initialize_primary_field(cls):
         field.name = field_name
         return field
 
+
 def _collect_fields(cls, id2str):
     for i, v in cls.__dict__.iteritems():
         if isinstance(v, OrzField):
@@ -124,23 +125,23 @@ class OrzBase(object):
     def create(cls, **kw):
         ins = cls(to_create=True, detached=False, **kw)
         reserved_kw, exclude_kw = _split_dictonary(kw, lambda k, _: k in cls.db_fields)
-        try_func_call(cls, 'before_create', **kw)
+        ins.before_create(**exclude_kw)
         data = cls.objects.create(reserved_kw)
         ins._refresh_db_fields(data)
-        try_func_call(ins, 'after_create', **exclude_kw)
+        ins.after_create(**exclude_kw)
         return ins
 
     @_detached_unavailable
     def save(self):
-        try_func_call(self, 'before_save')
+        self.before_save()
         self.objects.save(self)
-        try_func_call(self, 'after_save')
+        self.after_save()
 
     @_detached_unavailable
     def delete(self):
-        try_func_call(self, 'before_delete')
+        self.before_delete()
         self.objects.delete(self)
-        try_func_call(self, 'after_delete')
+        self.after_delete()
 
     def __getstate__(self):
         ret = {'dict': self.__dict__.copy(), 'db_fields': {}}
@@ -168,4 +169,22 @@ class OrzBase(object):
     @classmethod
     def count_by(cls, *a, **kw):
         return cls.objects.count_by(*a, **kw)
+
+    def after_create(self, **kw):
+        pass
+
+    def before_create(self, **kw):
+        pass
+
+    def before_save(self):
+        pass
+
+    def after_save(self):
+        pass
+
+    def before_delete(self):
+        pass
+
+    def after_delete(self):
+        pass
 
