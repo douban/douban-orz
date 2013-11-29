@@ -111,6 +111,9 @@ class CachedOrmManager(object):
         return ret
 
     def create(self, raw_kwargs):
+        return self.cls(self.create_record(raw_kwargs))
+
+    def create_record(self, raw_kwargs):
         kwargs = []
         kwargs = dict((k, (v() if callable(v) else v)) for k, v in self.default_vals.iteritems())
         kwargs.update(raw_kwargs)

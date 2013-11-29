@@ -1,4 +1,6 @@
 # -*- coding:utf8 -*-
+from functools import wraps
+
 from .cache_mgr import CachedOrmManager
 from .base_mgr import OrmItem, OrzField, OrzPrimaryField
 import warnings
@@ -57,7 +59,6 @@ def _collect_order_combs(cls):
     return order_combs
 
 
-
 class OrzMeta(type):
     def __init__(cls, cls_name, bases, di):
         if cls.__orz_table__ is not None:
@@ -81,13 +82,6 @@ class OrzMeta(type):
                 setattr(cls, f.name, OrmItem(f.name, f.output_filter))
 
 
-def try_func_call(obj, func_attr, *a, **kw):
-    if hasattr(obj, func_attr):
-        return getattr(obj, func_attr)(*a, **kw)
-
-def _detached_unavailable(func):
-    return func
-
 class OrzBase(object):
 
     objects = None
@@ -108,36 +102,52 @@ class OrzBase(object):
             setattr(self, i, val)
         self._initted = True
 
-    def __init__(self, to_create=False, detached=False, *a, **kw):
+    def __init__(self, to_create=False, *a, **kw):
         self.to_create = to_create
-        self.detached = False
         if not to_create:
             self._initted = False
             self._refresh_db_fields(kw)
             self._initted = True
+            self._detached = False
         else:
             self._initted = False
             for k, v in kw.iteritems():
                 setattr(self, k, v)
             self._initted = False
+            self._detached = True
+
+    def _do_create(self, **kw):
+        reserved_kw, exclude_kw = _split_dictonary(kw, lambda k, _: k in self.db_fields)
+        self._detached = True
+        self.before_create(**exclude_kw)
+
+        data = self.objects.create_record(reserved_kw)
+        self._detached = False
+        self._refresh_db_fields(data)
+
+        self.after_create(**exclude_kw)
+
+    def __detached_proof(func):
+        @wraps(func)
+        def __(self, *a, **kw):
+            if self._detached:
+                raise AttributeError("The %s can't be called when the instance is detached, namely not created or just deleted" % func.func_name)
+            return func(self, *a, **kw)
+        return __
 
     @classmethod
     def create(cls, **kw):
         ins = cls(to_create=True, detached=False, **kw)
-        reserved_kw, exclude_kw = _split_dictonary(kw, lambda k, _: k in cls.db_fields)
-        ins.before_create(**exclude_kw)
-        data = cls.objects.create(reserved_kw)
-        ins._refresh_db_fields(data)
-        ins.after_create(**exclude_kw)
+        ins._do_create(**kw)
         return ins
 
-    @_detached_unavailable
+    @__detached_proof
     def save(self):
         self.before_save()
         self.objects.save(self)
         self.after_save()
 
-    @_detached_unavailable
+    @__detached_proof
     def delete(self):
         self.before_delete()
         self.objects.delete(self)
