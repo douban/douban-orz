@@ -35,7 +35,7 @@ def _collect_fields(cls, id2str):
     for i, v in cls.__dict__.iteritems():
         if isinstance(v, OrzField):
             v.name = i
-            if id2str and i=='id' or i.endswith("_id"):
+            if id2str and (i=='id' or i.endswith("_id")):
                 v.output_filter = str
             yield (i, v)
 
@@ -80,7 +80,6 @@ class OrzMeta(type):
                                            order_combs=order_combs)
             for f in raw_db_fields:
                 setattr(cls, f.name, OrmItem(f.name, f.output_filter))
-
 
 class OrzBase(object):
 
@@ -200,4 +199,36 @@ class OrzBase(object):
 
     def after_delete(self):
         pass
+
+
+class OrzMixinMeta(OrzMeta):
+    def __init__(cls, name, bases, di):
+        super(OrzMixinMeta, cls).__init__(name, bases, di)
+        if 'OrzData4Mixin' in [i.__name__ for i in bases] and 'OrzBase' not in [i.__name__ for i in bases]:
+            cls.__orz_mixin_data__ = cls
+
+
+class OrzData4Mixin(object):
+
+    __orz_table__ = None
+
+    __metaclass__ = OrzMixinMeta
+
+    def __reduce__(self):
+        return (unpickle_for_orz_mixin, (self.__orz_mixin_data__, self.__orz_table__, self.__getstate__()))
+
+    @classmethod
+    def as_data_cls(cls, table_name):
+        di = dict(cls.__dict__)
+        di['__orz_table__'] = table_name
+        cls = type('mixin_4_data_'+cls.__name__, (cls, OrzBase), di)
+        return cls
+
+def unpickle_for_orz_mixin(mixin_cls, table_name, state):
+    di = dict(mixin_cls.__dict__)
+    di['__orz_table__'] = table_name
+    cls = type('mixin_4_data_'+mixin_cls.__name__, (mixin_cls, OrzBase), di)
+    ins = cls(**state['db_fields'])
+    ins.__dict__.update(state['dict'])
+    return ins
 
