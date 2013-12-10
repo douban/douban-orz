@@ -32,7 +32,8 @@ def _initialize_primary_field(cls):
 
 
 def _collect_fields(cls, id2str):
-    for i, v in cls.__dict__.iteritems():
+    for i in dir(cls):
+        v = getattr(cls, i)
         if isinstance(v, OrzField):
             v.name = i
             if id2str and (i=='id' or i.endswith("_id")):

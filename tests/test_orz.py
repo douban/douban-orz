@@ -240,6 +240,7 @@ class DummyCS(object):
     updated_at = OrzField()
     ep_num = OrzField()
 
+
 class TestFlushGetAfterCreationAndSaving(TestCase):
 
     def setUp(self):

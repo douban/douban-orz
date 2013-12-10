@@ -44,12 +44,14 @@ class TestNewOrz(TestCase):
 
 
     def test_gets_by(self):
-        li = [Dummy.create(subject_id=10, ep_num=ep_num, content='hheheheh', output_field=10) for ep_num in range(10)]
+        li = [Dummy.create(subject_id=10, ep_num=ep_num, content='hheheheh', output_field=10+ep_num) for ep_num in range(10)]
         z = li[-1]
         m = Dummy.gets_by(subject_id=10)
         self.assertEqual((z.id, z.subject_id), (m[0].id, m[0].subject_id))
         self.assertEqual([int(i.id) for i in m], range(10, 0, -1))
-        self.assertEqual(li[-1].output_field, str(10))
+        self.assertEqual(li[-1].output_field, str(19))
+
+        self.assertEqual(Dummy.gets_by(output_field=19)[0].id, li[-1].id)
 
     def test_save(self):
         z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh')
@@ -214,12 +216,13 @@ class TestNewOrz(TestCase):
                                 Dummy.create, subject_id=-3, ep_num=11, content='hheheheh')
 
 
-class DummyCS(OrzBase):
-    __orz_table__ = 'test_orz'
+class DummyBase(OrzBase):
     subject_id = OrzField()
     updated_at = OrzField()
     ep_num = OrzField()
 
+class DummyCS(DummyBase):
+    __orz_table__ = 'test_orz'
 
 class TestFlushGetAfterCreationAndSaving(TestCase):
 
@@ -244,7 +247,7 @@ class TestFlushGetAfterCreationAndSaving(TestCase):
         from datetime import datetime, timedelta
         a = DummyCS.create(ep_num=1)
         now = datetime.now()
-        self.assertEqual(a.subject_id, '1001')
+        self.assertEqual(a.subject_id, 1001)
         self.assertTrue(now - a.updated_at < timedelta(seconds=1))
 
     def test_save(self):
