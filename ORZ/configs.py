@@ -2,6 +2,7 @@ from itertools import combinations, chain
 from collections import defaultdict
 from operator import attrgetter
 from functools import partial
+import logging
 
 
 class Forward(object):
@@ -27,6 +28,7 @@ class ConfigColl(object):
         try:
             return self._coll[key]
         except KeyError:
+            logging.warning("your query key [%s] doesn't match your previous definition" % str(key))
             return None
 
     def __setitem__(self, key, val):

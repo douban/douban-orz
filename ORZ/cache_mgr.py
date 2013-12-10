@@ -80,9 +80,8 @@ class CachedOrmManager(object):
         sql_executor = self.sql_executor
         if conditions:
             config = self.config_mgr.lookup_gets_by(conditions.keys(), order_keys)
-            if amount is not None and \
-                self._amount_check(amount, start_limit):
-                primary_field_vals = self.sql_executor.get_ids(conditions, _tart_limit, order_keys)
+            if config is None or (amount is not None and self._amount_check(amount, start_limit)):
+                primary_field_vals = self.sql_executor.get_ids(conditions, start_limit, order_keys)
                 return [self.cls(**self.sql_executor.get(i)) for i in primary_field_vals]
 
             _start_limit = (0, amount) if amount is not None else tuple()
@@ -169,6 +168,9 @@ class CachedOrmManager(object):
 
     def count_by(self, **conditions):
         config = self.config_mgr.lookup_normal(conditions.keys())
+        if config is None:
+            return self.sql_executor.calc_count(conditions)
+
         ck = config.to_string(conditions)
         c = self.mc.get(ck)
         if c is None:
