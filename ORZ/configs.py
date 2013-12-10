@@ -19,11 +19,33 @@ def serialize_kv_alphabetically(di):
     return '|'.join(["%s=%s" % (k, change_bool(di[k])) for k in sorted(di.keys())]).replace(" ", "")
 
 
+class ConfigColl(object):
+    def __init__(self):
+        self._coll = {}
+
+    def __getitem__(self, key):
+        try:
+            return self._coll[key]
+        except KeyError:
+            return None
+
+    def __setitem__(self, key, val):
+        self._coll[key] = val
+
+    def itervalues(self):
+        return self._coll.itervalues()
+
+    def __len__(self):
+        return len(self._coll)
+
+    def keys(self):
+        return self._coll.keys()
+
+
 class CacheConfigMgr(object):
     def __init__(self):
-        self.gets_by_config_coll = {}
-        self.normal_config_coll = {}
-        self.custom_config_coll = {}
+        self.gets_by_config_coll = ConfigColl()
+        self.normal_config_coll = ConfigColl()
         self.key_related = defaultdict(list)
 
     def add_to(self, config_coll, config):

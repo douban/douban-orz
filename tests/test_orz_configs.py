@@ -1,6 +1,6 @@
 from unittest import TestCase
 from itertools import combinations, chain
-from ORZ.configs import GetsByConfig, Config, CacheConfigMgr
+from ORZ.configs import GetsByConfig, Config, CacheConfigMgr, ConfigColl
 
 class TestGetsByConfigs(TestCase):
     def test_hash_keys(self):
@@ -72,3 +72,10 @@ class TestConfigMgr(TestCase):
         self.assertEqual(sort_([i.as_key() for i in cfgs]),
                          sort_([i.as_key() for i in predate_configs]))
 
+
+class TestConfigColl(TestCase):
+    def test_main(self):
+        coll = ConfigColl()
+        coll['1'] = 1
+        self.assertEqual(coll['1'], 1)
+        self.assertEqual(coll['2'], None)
