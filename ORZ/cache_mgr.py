@@ -111,7 +111,7 @@ class CachedOrmManager(object):
         return ret
 
     def create(self, raw_kwargs):
-        return self.cls(self.create_record(raw_kwargs))
+        return self.cls(**self.create_record(raw_kwargs))
 
     def create_record(self, raw_kwargs):
         kwargs = []
