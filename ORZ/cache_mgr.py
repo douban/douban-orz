@@ -36,6 +36,7 @@ class CachedOrmManager(object):
         self.config_mgr.generate_basic_configs(kv_to_ids_ck,
                                                [f.name for f in db_fields if f.as_key], orders)
 
+
         self.default_vals = dict((k.name, k.default) for k in db_fields if k.default is not None)
 
     def __getattr__(self, field):
@@ -137,11 +138,14 @@ class CachedOrmManager(object):
 
     def _get_cks(self, data_src, fields):
         cks = []
+        configs = {}
         for field in fields:
-            configs = self.config_mgr.lookup_related(field)
-            for c in configs:
-                field_cks = c.to_string(data_src)
-                cks.append(field_cks)
+            for i in self.config_mgr.lookup_related(field):
+                configs[i.as_key()]=i
+
+        for c in configs.itervalues():
+            field_cks = c.to_string(data_src)
+            cks.append(field_cks)
         return cks
 
     def save(self, ins):
