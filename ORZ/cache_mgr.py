@@ -98,22 +98,18 @@ class CachedOrmManager(object):
                 ids = None
 
 
-
-            if ids is not None:
-                ret = self._get_and_refresh(sql_executor, ids)
-            else:
+            if ids is None:
                 ids = sql_executor.get_ids()
                 self.mc.set(ck, ids, ONE_HOUR)
-                ret = self._get_and_refresh(sql_executor, ids, force_flush)
 
         else:
             ids = sql_executor.get_ids()
-            ret = [self.cls(**sql_executor.get(i)) for i in ids]
 
         if start_limit:
             start, limit = start_limit
-            return ret[start:start + limit]
-        return ret
+            ids = ids[start:start + limit]
+
+        return self._get_and_refresh(sql_executor, ids, force_flush)
 
     def count(self, sql_executor):
         config = self.config_mgr.lookup_normal(sql_executor.conditions.keys())
