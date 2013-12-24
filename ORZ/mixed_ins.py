@@ -6,15 +6,24 @@ def create(cls, **kwargs):
 
 
 def delete(self):
-    self.objects.delete(self)
-    # statement = 'delete from %s where id = %%s' % table_name
-    # store.execute(statement, self.id)
-    # store.commit()
-    # self.objects.flush_cache(self, set(chain(*extra.get('keys', []))))
+    return self.objects.delete(self)
 
 
 def save(self):
-    self.objects.save(self)
+    return self.objects.save(self)
+
+
+def create_transactionally(cls, **kwargs):
+    ins = cls.objects.create(kwargs, True)
+    return ins
+
+
+def delete_transactionally(self):
+    return self.objects.delete(self, True)
+
+
+def save_transactionally(self):
+    return self.objects.save(self, True)
 
 
 def getstate(self):

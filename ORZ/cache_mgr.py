@@ -123,14 +123,14 @@ class CachedOrmManager(object):
         else:
             return c
 
-    def create(self, raw_kwargs):
+    def create(self, raw_kwargs, transactional=False):
         kwargs = self.default_vals.copy()
         kwargs.update(raw_kwargs)
         cks = self._get_cks(kwargs, self.db_fields)
         self.mc.delete_multi(cks)
-
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_fields if field in kwargs)
-        _id = self.sql_executor.create(sql_data)
+
+        _id = self.sql_executor.create(sql_data, transactional)
 
         sql_data['id'] = _id
 
@@ -148,7 +148,7 @@ class CachedOrmManager(object):
             cks.append(field_cks)
         return cks
 
-    def save(self, ins):
+    def save(self, ins, transactional=False):
         cks = []
         datum = dict((f, getattr(ins, "hidden____org_" + f)) for f in self.db_fields)
         cks.extend(self._get_cks(datum, ins.dirty_fields))
@@ -158,13 +158,13 @@ class CachedOrmManager(object):
         self.mc.delete_multi(all_cks)
 
         sql_data = dict((field, getattr(ins, field)) for field in ins.dirty_fields)
-        self.sql_executor.update_row(ins.id, sql_data)
+        return self.sql_executor.update_row(ins.id, sql_data, transactional)
 
-    def delete(self, ins):
+    def delete(self, ins, transactional=False):
         cks = self._get_cks(ins, ["id",]+self.db_fields)
         self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
 
-        self.sql_executor.delete(ins.id)
+        return self.sql_executor.delete(ins.id, transactional)
 
     def gets_by(self, order_by='-id', start=0, limit=sys.maxint, force_flush=False, **kw):
         real_order_by = (order_by, ) if type(order_by) is not tuple else order_by
@@ -247,6 +247,9 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
     cls.save = method_combine(save)
     cls.create = classmethod(method_combine(create, db_fields))
     cls.delete = method_combine(delete)
+    cls.delete_transactionally = delete_transactionally
+    cls.create_transactionally = classmethod(create_transactionally)
+    cls.save_transactionally = save_transactionally
     cls.__org_init__ = cls.__init__
     cls.__init__ = init
     cls.__setstate__ = setstate

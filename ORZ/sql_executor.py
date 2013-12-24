@@ -15,27 +15,32 @@ class SqlExecutor(object):
         self.org_order_key = ('-id', )
         #self.dirty_fields = set()
 
-    def create(self, field_data):
+    def create(self, field_data, transational=False):
         set_sql, v = self._sql_statement('SET',
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
         statement = "insert into %s %s" % (self.table_name, set_sql)
         _id = self.sqlstore.execute(statement, v)
-        self.sqlstore.commit()
+        if not transational:
+            self.sqlstore.commit()
         return _id
 
-    def update_row(self, id, field_data):
+    def update_row(self, id, field_data, transational=False):
         set_sql, v = self._sql_statement('SET',
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
         statement = "update %s %s where id = %s" % (self.table_name, set_sql, id)
-        self.sqlstore.execute(statement, tuple(v))
-        self.sqlstore.commit()
+        ret = self.sqlstore.execute(statement, tuple(v))
+        if not transational:
+            self.sqlstore.commit()
+        return ret
 
-    def delete(self, id):
+    def delete(self, id, transational=False):
         statement = 'delete from %s where id = %%s' % self.table_name
-        self.sqlstore.execute(statement, id)
-        self.sqlstore.commit()
+        ret = self.sqlstore.execute(statement, id)
+        if not transational:
+            self.sqlstore.commit()
+        return ret
 
     def _clone(self):
         cloned = self.__class__(self.mgr, self.table_name, self.db_fields, self.sqlstore)

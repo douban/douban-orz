@@ -1,4 +1,6 @@
+from MySQLdb import IntegrityError
 from functools import wraps
+from contextlib import contextmanager
 
 class OrmItem(object):
     def __init__(self, field_name):
@@ -40,6 +42,31 @@ def orz_get_multi(func):
     def __(self_or_cls, *a, **kw):
         return self_or_cls.objects.get_multiple_ids(func(self_or_cls, *a, **kw))
     return __
+
+@contextmanager
+def start_transaction(*cls_or_ins):
+    assert len(cls_or_ins) > 0
+
+    for c in cls_or_ins:
+        for i in ['delete', 'save', 'create']:
+            setattr(c, 'old_'+i, getattr(c, i))
+            setattr(c, i, getattr(c, i+'_transactionally'))
+
+    try:
+        yield cls_or_ins
+    except (IntegrityError, OrzForceRollBack):
+        cls_or_ins[0].objects.sql_executor.sqlstore.rollback()
+    else:
+        cls_or_ins[0].objects.sql_executor.sqlstore.commit()
+    finally:
+        for c in cls_or_ins:
+            for i in ['delete', 'save', 'create']:
+                setattr(c, i, getattr(c, 'old_'+i))
+
+
+class OrzForceRollBack(Exception):
+    pass
+
 
 if __name__=='__main__':
     pass
