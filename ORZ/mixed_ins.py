@@ -34,6 +34,10 @@ def getstate(self):
 
     return ret
 
+def exist(cls, **conditions):
+    ret = cls.count_by(**conditions)
+    return ret > 0
+
 
 def setstate(self, state):
     self.__dict__.update(state['dict'])

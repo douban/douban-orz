@@ -113,6 +113,13 @@ class TestOrz(TestCase):
 
         self.assertRaises(ValueError, Dummy.create, **dict(id=5, subject_id=-1, ep_num=10, content='hheheheh1'))
 
+    def test_exist(self):
+        self.assertFalse(Dummy.exist(subject_id=10, ep_num=10))
+
+        z = Dummy.create(subject_id=10, ep_num=10, content='hheheheh', extra_args=10)
+        self.assertTrue(Dummy.exist(subject_id=10, ep_num=10))
+        self.assertTrue(Dummy.exist(id=z.id))
+
 
     def test_gets_by(self):
         li = [Dummy.create(subject_id=10, ep_num=ep_num, content='hheheheh') for ep_num in range(10)]

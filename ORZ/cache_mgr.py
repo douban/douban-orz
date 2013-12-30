@@ -262,6 +262,7 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
     cls.gets_by = cls.objects.gets_by
     cls.count_by = cls.objects.count_by
     cls.get_by = cls.objects.get
+    cls.exist = classmethod(exist)
 
     for k in db_fields:
         setattr(cls, k,  OrmItem(k))
