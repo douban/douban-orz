@@ -32,8 +32,14 @@ def _initialize_primary_field(cls):
 
 
 def _collect_fields(cls, id2str):
-    for i in dir(cls):
-        v = getattr(cls, i)
+    def merge_dict(di_from, di_to):
+        m = di_from.copy()
+        m.update(di_to)
+        return m
+
+    # 拿到一个类所有声明的属性
+    # 为啥不用dir? 因为getattr会触发descriptor
+    for i, v in reduce(merge_dict,  [o.__dict__ for o in reversed(cls.__mro__)]).iteritems():
         if isinstance(v, OrzField):
             v.name = i
             if id2str and (i=='id' or i.endswith("_id")):
