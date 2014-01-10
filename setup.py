@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 # package meta info
 NAME = "ORZ"
-VERSION = "0.2.5.0"
+VERSION = "0.3.0.0"
 DESCRIPTION = "missing data manager in shire, even in middle earth"
 AUTHOR = "fuyuquan"
 AUTHOR_EMAIL = "fuyuquan@douban.com"

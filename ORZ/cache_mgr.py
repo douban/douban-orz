@@ -39,6 +39,7 @@ class CachedOrmManager(object):
 
         self.default_vals = dict((k.name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
 
+
     def _get_and_refresh(self, sql_executor, primary_field_vals, force_flush=False):
         res = []
         if not force_flush:
@@ -93,26 +94,23 @@ class CachedOrmManager(object):
             else:
                 primary_field_vals = None
 
-            if primary_field_vals is not None:
-                ret = self._get_and_refresh(self.sql_executor, primary_field_vals)
-            else:
-                primary_field_vals = self.sql_executor.get_ids(conditions, _start_limit, order_keys)
+            if primary_field_vals is None:
+                primary_field_vals = sql_executor.get_ids(conditions, _start_limit, order_keys)
                 self.mc.set(ck, primary_field_vals, ONE_HOUR)
-                ret = self._get_and_refresh(self.sql_executor, primary_field_vals, force_flush)
 
         else:
-            primary_field_vals = self.sql_executor.get_ids(conditions, start_limit, order_keys)
-            ret = [self.cls(**self.sql_executor.get(i)) for i in primary_field_vals]
+            primary_field_vals = sql_executor.get_ids(conditions, start_limit, order_keys)
 
         if start_limit:
             start, limit = start_limit
-            return ret[start:start + limit]
-        return ret
+            primary_field_vals = primary_field_vals[start:start + limit]
 
-    def create(self, raw_kwargs):
-        return self.cls(**self.create_record(raw_kwargs))
+        return self._get_and_refresh(sql_executor, primary_field_vals, force_flush)
 
-    def create_record(self, raw_kwargs):
+    def create(self, raw_kwargs, transactional=False):
+        return self.cls(**self.create_record(raw_kwargs, transactional))
+
+    def create_record(self, raw_kwargs, transactional=False):
         kwargs = []
         kwargs = dict((k, (v() if callable(v) else v)) for k, v in self.default_vals.iteritems())
         kwargs.update(raw_kwargs)
@@ -121,20 +119,23 @@ class CachedOrmManager(object):
         self.mc.delete_multi(cks)
 
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_field_names if field in kwargs)
-        _primary_field_val = self.sql_executor.create(sql_data)
+        _primary_field_val = self.sql_executor.create(sql_data, transactional)
 
         return self.sql_executor.get(_primary_field_val)
 
     def _get_cks(self, data_src, fields):
         cks = []
+        configs = {}
         for field in fields:
-            configs = self.config_mgr.lookup_related(field)
-            for c in configs:
-                field_cks = c.to_string(data_src)
-                cks.append(field_cks)
+            for i in self.config_mgr.lookup_related(field):
+                configs[i.as_key()]=i
+
+        for c in configs.itervalues():
+            field_cks = c.to_string(data_src)
+            cks.append(field_cks)
         return cks
 
-    def save(self, ins):
+    def save(self, ins, transactional=False):
         cks = []
         datum = dict((f, getattr(ins, "hidden____org_" + f)) for f in self.db_field_names)
         cks.extend(self._get_cks(datum, ins.dirty_fields))
@@ -144,20 +145,22 @@ class CachedOrmManager(object):
         self.mc.delete_multi(all_cks)
 
         sql_data = dict((field, getattr(ins, field)) for field in ins.dirty_fields)
-        self.sql_executor.update_row(ins.id, sql_data)
+        ret = self.sql_executor.update_row(ins.id, sql_data, transactional)
 
-        new_ins = self.get(id=ins.id)
-
+        data = self.sql_executor.get(ins.id)
         for i in self.db_field_names:
-            setattr(ins, i, getattr(new_ins, i))
+            setattr(ins, i, data[i])
 
         ins.dirty_fields = set()
+        return ret
 
-    def delete(self, ins):
+
+    def delete(self, ins, transactional=False):
         cks = self._get_cks(ins, [self.primary_field.name]+self.db_field_names)
+
         self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
 
-        self.sql_executor.delete(ins.id)
+        return self.sql_executor.delete(ins.id, transactional)
 
     def gets_by(self, order_by=None, start=0, limit=sys.maxint, force_flush=False, **kw):
         if order_by is None:

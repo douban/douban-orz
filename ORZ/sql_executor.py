@@ -12,27 +12,34 @@ class SqlExecutor(object):
         self.table_name = table_name
         #self.dirty_fields = set()
 
-    def create(self, field_data):
+    def create(self, field_data, transational=False):
         set_sql, v = self._sql_statement('SET',
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
         statement = "insert into %s %s" % (self.table_name, set_sql)
         _id = self.sqlstore.execute(statement, v)
-        self.sqlstore.commit()
+        if not transational:
+            self.sqlstore.commit()
         return _id
 
-    def update_row(self, primary_field, field_data):
+    def update_row(self, primary_field, field_data, transational=False):
         set_sql, v = self._sql_statement('SET',
                                       [("%s=%%s" % kv[0], kv[1]) for kv in field_data.items()],
                                       ',')
         statement = "update %s %s where %s = %s" % (self.table_name, set_sql, self.primary_field_name, primary_field)
-        self.sqlstore.execute(statement, tuple(v))
+        ret = self.sqlstore.execute(statement, tuple(v))
         self.sqlstore.commit()
+        if not transational:
+            self.sqlstore.commit()
+        return ret
 
-    def delete(self, primary_field):
+    def delete(self, primary_field, transational=False):
         statement = 'delete from %s where %s = %%s' % (self.table_name, self.primary_field_name)
-        self.sqlstore.execute(statement, primary_field)
+        ret = self.sqlstore.execute(statement, primary_field)
         self.sqlstore.commit()
+        if not transational:
+            self.sqlstore.commit()
+        return ret
 
     def _transform_order_keys(self, keys):
         def __(key):

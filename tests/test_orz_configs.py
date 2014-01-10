@@ -41,14 +41,14 @@ class TestConfigMgr(TestCase):
 
     def test_gen_basic_configs(self):
         sort_ = lambda x: sorted(x, key= lambda x:''.join(x))
-        keys = ("a", "b", "c")
+        keys = [ "a", "b", "c", "id" ]
         mgr = CacheConfigMgr()
-        mgr.generate_basic_configs('1111', keys, tuple((i, ) for i in keys))
+        mgr.generate_basic_configs('1111', keys, list((i, ) for i in keys))
 
-        self.assertEqual(len(mgr.normal_config_coll), 7)
-        self.assertEqual(len(mgr.gets_by_config_coll), 7*3)
+        self.assertEqual(len(mgr.normal_config_coll), 8)
+        self.assertEqual(len(mgr.gets_by_config_coll), 8*4)
 
-        key_combs = list(chain(*[combinations(keys, i) for i in range(1, 4)]))
+        key_combs = list(chain(*[combinations(keys[:3], i) for i in range(1, 4)]))+[("id",)]
 
         self.assertEqual(sort_(mgr.normal_config_coll.keys()), sort_(key_combs))
 
@@ -57,7 +57,7 @@ class TestConfigMgr(TestCase):
 
     def test_lookup_related(self):
         sort_ = lambda x: sorted(x, key= lambda x:''.join(x))
-        keys = ("a", "b")
+        keys = ["a", "b", "id"]
         mgr = CacheConfigMgr()
         mgr.generate_basic_configs('1111', keys)
         cfgs = mgr.lookup_related("a")

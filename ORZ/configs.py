@@ -17,7 +17,7 @@ class Forward(object):
 def serialize_kv_alphabetically(di):
     def change_bool(value):
         return int(value) if type(value) == bool else value
-    return '|'.join(["%s=%s" % (k, change_bool(di[k])) for k in sorted(di.keys())]).replace(" ", "")
+    return '|'.join("%s=%s" % (k, change_bool(v)) for k, v in di).replace(" ", "")
 
 
 class ConfigColl(object):
@@ -61,11 +61,13 @@ class CacheConfigMgr(object):
             for i in member.itervalues():
                 yield i
 
-    def generate_basic_configs(self, prefix, key_field_names, orders=tuple()):
+    def generate_basic_configs(self, prefix, raw_key_field_names, orders=tuple()):
+        key_field_names = list(raw_key_field_names)
+        key_field_names.remove('id')
         comb = list(chain(*[combinations(key_field_names, i) for i in range(1, len(key_field_names)+1)]))
         cfgs = []
 
-        for i in comb:
+        for i in comb+[('id',),]:
             c = Config(prefix, i)
             self.add_to(self.normal_config_coll, c)
             cfgs.append(c)
@@ -102,7 +104,7 @@ class Config(object):
         else:
             func = lambda x: getattr(data, x)
 
-        _t_str = serialize_kv_alphabetically(dict((f, func(f)) for f in self.keys))
+        _t_str = serialize_kv_alphabetically((f, func(f)) for f in sorted(self.keys))
         return self.prefix + ":" + _t_str
 
 
