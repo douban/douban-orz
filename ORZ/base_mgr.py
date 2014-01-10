@@ -72,9 +72,12 @@ def start_transaction(*cls_or_ins):
     assert len(cls_or_ins) > 0
 
     for c in cls_or_ins:
-        for i in ['delete', 'save', 'create']:
-            setattr(c, 'old_'+i, getattr(c, i))
-            setattr(c, i, getattr(c, i+'_transactionally'))
+        if hasattr(c, '__new_orz__'):
+            c.__transaction__ = True
+        else:
+            for i in ['delete', 'save', 'create']:
+                setattr(c, 'old_'+i, getattr(c, i))
+                setattr(c, i, getattr(c, i+'_transactionally'))
 
     try:
         yield cls_or_ins
@@ -84,8 +87,12 @@ def start_transaction(*cls_or_ins):
         cls_or_ins[0].objects.sql_executor.sqlstore.commit()
     finally:
         for c in cls_or_ins:
-            for i in ['delete', 'save', 'create']:
-                setattr(c, i, getattr(c, 'old_'+i))
+            if hasattr(c, '__new_orz__'):
+                c.__transaction__ = False
+            else:
+                for i in ['delete', 'save', 'create']:
+                    setattr(c, i, getattr(c, 'old_'+i))
+
 
 
 class OrzForceRollBack(Exception):

@@ -98,6 +98,10 @@ class OrzBase(object):
 
     __orz_cache_ver__ = ""
 
+    __new_orz__ = True
+
+    __transaction__ = False
+
     class OrzMeta:
         cache_ver = ""
 
@@ -127,7 +131,7 @@ class OrzBase(object):
         self._detached = True
         self.before_create(**exclude_kw)
 
-        data = self.objects.create_record(reserved_kw)
+        data = self.objects.create_record(reserved_kw, self.__transaction__)
         self._detached = False
         self._refresh_db_fields(data)
 
@@ -150,17 +154,19 @@ class OrzBase(object):
     @__detached_proof
     def save(self):
         self.before_save()
-        self.objects.save(self)
+        ret = self.objects.save(self, self.__transaction__)
         self.after_save()
+        return ret
 
     @__detached_proof
     def delete(self):
         self.before_delete()
 
-        self.objects.delete(self)
+        ret = self.objects.delete(self, self.__transaction__)
 
         self._detached = True
         self.after_delete()
+        return ret
 
     def __getstate__(self):
         ret = {'dict': self.__dict__.copy(), 'db_fields': {}}
@@ -176,6 +182,7 @@ class OrzBase(object):
         for i in self.db_fields:
             setattr(self, i, state['db_fields'][i])
         self._initted = True
+
 
     @classmethod
     def gets_by(cls, *a, **kw):
