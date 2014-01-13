@@ -28,7 +28,6 @@ class SqlExecutor(object):
                                       ',')
         statement = "update %s %s where %s = %s" % (self.table_name, set_sql, self.primary_field_name, primary_field)
         ret = self.sqlstore.execute(statement, tuple(v))
-        self.sqlstore.commit()
         if not transational:
             self.sqlstore.commit()
         return ret

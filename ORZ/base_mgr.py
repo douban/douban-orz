@@ -70,28 +70,38 @@ def orz_get_multi(func):
 @contextmanager
 def start_transaction(*cls_or_ins):
     assert len(cls_or_ins) > 0
+    def replace():
+        for c in cls_or_ins:
+            if hasattr(c, '__new_orz__'):
+                c.__transaction__ = True
+            else:
+                for i in ['delete', 'save', 'create']:
+                    setattr(c, 'old_'+i, getattr(c, i))
+                    setattr(c, i, getattr(c, i+'_transactionally'))
 
-    for c in cls_or_ins:
-        if hasattr(c, '__new_orz__'):
-            c.__transaction__ = True
-        else:
-            for i in ['delete', 'save', 'create']:
-                setattr(c, 'old_'+i, getattr(c, i))
-                setattr(c, i, getattr(c, i+'_transactionally'))
-
-    try:
-        yield cls_or_ins
-    except (IntegrityError, OrzForceRollBack):
-        cls_or_ins[0].objects.sql_executor.sqlstore.rollback()
-    else:
-        cls_or_ins[0].objects.sql_executor.sqlstore.commit()
-    finally:
+    def recover():
         for c in cls_or_ins:
             if hasattr(c, '__new_orz__'):
                 c.__transaction__ = False
             else:
                 for i in ['delete', 'save', 'create']:
                     setattr(c, i, getattr(c, 'old_'+i))
+
+    replace()
+    try:
+        yield cls_or_ins
+
+    except (IntegrityError, OrzForceRollBack):
+        cls_or_ins[0].objects.sql_executor.sqlstore.rollback()
+
+    except:
+        recover()
+        raise
+
+    else:
+        cls_or_ins[0].objects.sql_executor.sqlstore.commit()
+    finally:
+        recover()
 
 
 

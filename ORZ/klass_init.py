@@ -37,13 +37,12 @@ def _collect_fields(cls, id2str):
         m.update(di_to)
         return m
 
-    # 拿到一个类所有声明的属性
-    # 为啥不用dir? 因为getattr会触发descriptor
+    # use dicts of classes by reversed mro order instead of dir(cls) to bypass invoking descriptor
     for i, v in reduce(merge_dict,  [o.__dict__ for o in reversed(cls.__mro__)]).iteritems():
         if isinstance(v, OrzField):
             v.name = i
             if id2str and (i=='id' or i.endswith("_id")):
-                v.output_filter = str
+                v.output_filter = lambda x: None if x is None else str(x)
             yield (i, v)
 
 
