@@ -156,7 +156,7 @@ pre .chunk {
 </style>
 
 </head>
-<body class="normal highlightavoid">
+<body class="normal">
   <div id="wrapper">
       <h1 id="orz">ORZ</h1>
 
@@ -264,7 +264,7 @@ dummy_obj.update_subject_id(subject_id=subject_id)</code></pre>
 <p>使用ORZ以后我们这样写</p>
 
 <pre><code class="python">class DummyYummy(OrzBase):
-	__orz_table__ = &apos;dummy_yummy&apos;
+    __orz_table__ = &apos;dummy_yummy&apos;
     uid = OrzField(as_key=OrzField.KeyType.DESC)
     username = OrzField()
     subject_id = OrzField(as_key=OrzField.KeyType.DESC)
@@ -307,15 +307,15 @@ setup(your_store, your_mc)</code></pre>
 <pre><code class="python"># don&apos;t forget to setup
 from ORZ import OrzBase, Orz
 class Question(OrzBase):
-	__orz_table__ = &quot;question&quot;
-	title = OrzField()
-	subject_id = OrzField()</code></pre>
+    __orz_table__ = &quot;question&quot;
+    title = OrzField()
+    subject_id = OrzField()</code></pre>
 
 <p>从上述定义里可知 </p>
 
 <ul>
 <li>每个类都是OrzBase的子类</li>
-<li><strong>orz_table</strong> 指定对应的table</li>
+<li><code>__orz_table__</code> 指定对应的table</li>
 <li>每个 OrzField 实例化对象对应数据表里字段，并且该类成员名字与数据表里保持一致</li>
 </ul>
 
@@ -325,21 +325,21 @@ class Question(OrzBase):
 
 <p>上面的数据表, 我们增加一个查询的需求&#8211;查询用户，在条目下的问题，于是表增加</p>
 
-<pre><code class="sql">	KEY `author_subject_idx` (`author_id`, `subject_id`)</code></pre>
+<pre><code class="sql">KEY `author_subject_idx` (`author_id`, `subject_id`)</code></pre>
 
 <p>Model字段定义改为</p>
 
-<pre><code class="python">	subject_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
-	author_id = OrzField(as_key=OrzField.KeyType.IndexOnly)</code></pre>
+<pre><code class="python">subject_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
+author_id = OrzField(as_key=OrzField.KeyType.IndexOnly)</code></pre>
 
 <p>这样不仅按照需求实现的查询的Cache就能被管理了，而且是<code>subject_id</code>和<code>author_id</code>两者，或者之一为维度查询的Cache都能被管理了。也就说，当需求变更索引改为</p>
 
-<pre><code class="sql">	KEY `author_idx` (`author_id`),
-	KEY `subject_idx` (`subject_id`)</code></pre>
+<pre><code class="sql">KEY `author_idx` (`author_id`),
+KEY `subject_idx` (`subject_id`)</code></pre>
 
 <p>或者</p>
 
-<pre><code class="sql">	KEY `author_idx` (`author_id`)</code></pre>
+<pre><code class="sql">KEY `author_idx` (`author_id`)</code></pre>
 
 <p>的时候，Model声明的字段也是满足需求的对应查询的缓存管理 </p>
 
@@ -386,7 +386,7 @@ questions = Question.gets_by(author_id=user.id)</code></pre>
 
 <h5 id="update">Update</h5>
 
-<pre><code class="python">	model_instance.save()</code></pre>
+<pre><code class="python">model_instance.save()</code></pre>
 
 <p>例子:</p>
 
@@ -402,7 +402,7 @@ ret = quesiton.save()</code></pre>
 
 <h5 id="delete">Delete</h5>
 
-<pre><code class="python">	ret = model_instance.delete()</code></pre>
+<pre><code class="python">ret = model_instance.delete()</code></pre>
 
 <ul>
 <li>ret 为数据库操作的返回值</li>
@@ -420,10 +420,10 @@ question.delete()</code></pre>
 <h5 id="creationaspect">Creation Aspect</h5>
 
 <pre><code class="python">def before_create(self, **extra_args):
-	pass
-	
+    pass
+
 def after_create(self, **extra_args):
-	pass</code></pre>
+    pass</code></pre>
 
 <ul>
 <li><code>extra_args</code> 是调用 <code>create</code> 时传入的非 <code>OrzField</code> 定义的参数。</li>
@@ -433,18 +433,18 @@ def after_create(self, **extra_args):
 <h5 id="saveaspect">Save Aspect</h5>
 
 <pre><code class="python">def before_save(self):
-	pass
-	
+    pass
+
 def after_save(self):
-	pass</code></pre>
+    pass</code></pre>
 
 <h5 id="deletionaspect">Deletion Aspect</h5>
 
 <pre><code class="python">def before_delete(self):
-	pass
-	
+    pass
+
 def after_delete(self):
-	pass</code></pre>
+    pass</code></pre>
 
 <h5 id="warning">Warning</h5>
 
@@ -459,11 +459,11 @@ def after_delete(self):
 <pre><code class="python">subject_id = OrzField(as_key=OrzField.KeyType.X)</code></pre>
 
 <ul>
-<li>X = DESC<br/>
+<li>X = DESC
 subject_id 可能会作为查询条件， 同时以<em>只以subject_id降序</em>可能会作为查询集合<em>单独</em>排序条件</li>
-<li>X = ASC<br/>
+<li>X = ASC
 subject_id 可能会作为查询条件， 同时以<em>只以subject_id升序</em>可能会作为查询集合<em>单独</em>排序条件</li>
-<li>X = AD<br/>
+<li>X = AD
 subject_id 可能会作为查询条件， 同时以<em>subject_id升序或者降序</em>都可能会作为查询集合<em>单独</em>排序条件</li>
 </ul>
 
@@ -477,7 +477,7 @@ questions = Question.gets_by(author_id=user.id, order_by=&apos;-subject_id&apos;
 <p>假如需要的查询是类似 <code>sql</code> 里 <code>order by key1 desc, key2</code>，或者定义的 <code>OrzField</code> 并作为查询条件，那么可以在OrzModel里定义一个 Nested Class - <code>OrzMeta</code></p>
 
 <pre><code>class OrzMeta:
-	order_combs = ((&apos;-key1&apos;, &apos;key2&apos;), (&apos;key3&apos;，), ...)	</code></pre>
+    order_combs = ((&apos;-key1&apos;, &apos;key2&apos;), (&apos;key3&apos;，), ...)</code></pre>
 
 <ul>
 <li>order_combs 是 <code>tuple</code>，<code>tuple</code>里每个元素都是一个排序组合的<code>tuple</code>。排序的字段用字符串表示，降序在字段前加&#8220;-&#8221;作为前缀。</li>
@@ -499,16 +499,15 @@ questions = Question.gets_by(author_id=user.id, order_by=&apos;-subject_id&apos;
 
 <p>先看定义和Model定义</p>
 
-<pre><code class="sql">	`title` varchar(10) DEFAULT &apos;hello&apos;
-	`created_at` timestamp NOT NULL DEFAULT &apos;2010-10-10 10:10:10&apos;,
-	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</code></pre>
+<pre><code class="sql">`title` varchar(10) DEFAULT &apos;hello&apos;
+`created_at` timestamp NOT NULL DEFAULT &apos;2010-10-10 10:10:10&apos;,
+`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</code></pre>
 
 <pre><code class="python">class Question(OrzModel):
-	__orz_table__ = &quot;question&quot;
+    __orz_table__=&quot;question&quot;
     updated_at = OrzField()
     created_at = OrzField()
-    title = OrzField()
-    </code></pre>
+    title = OrzField()</code></pre>
 
 <p>那么 <code>q = Question.create()</code> 里 <code>q.updated_at</code> 等于当前时间, <code>q.created_at</code> 等于 <code>datetime(year=2010, month=10, day=10, hour=10, minute=10, sencond=10)</code> , <code>q.title</code> 等于 <code>'hello'</code> </p>
 
@@ -537,8 +536,8 @@ q.save()</code></pre>
 <p>ORZ封装了一个便捷的事务处理</p>
 
 <pre><code class="python">with start_transaction(orz_instance, OrzModelCLS) as transactional_orz_instance, transactional_orz_cls:
-	transactional_orz_instance.save()
-	transactional_orz_cls.create(**kwargs)</code></pre>
+    transactional_orz_instance.save()
+    transactional_orz_cls.create(**kwargs)</code></pre>
 
 <ul>
 <li>在这个transaction的context里，抛出<code>IntegrityError</code>或者<code>OrzForceRollBack</code>都会Rollback</li>
@@ -554,7 +553,7 @@ q.save()</code></pre>
 <dl>
 <dt>as_key</dt>
 <dd>
-<p>有4种默认值 </p>
+<p>有4种默认值</p>
 
 <ul>
 <li>KeyType.NOT_INDEX: 默认值。顾名思义</li>
@@ -574,14 +573,33 @@ q.save()</code></pre>
 <h5 id="orzmeta">OrzMeta</h5>
 
 <pre><code class="python">class OrzMeta:
-	order_combs = (,)
-	id2str = False
-	cache_ver = &apos;&apos;
-	</code></pre>
+    order_combs = (,)
+    id2str = False
+    cache_ver = &apos;&apos;
+</code></pre>
 
-<p>order_combs： 排序条件的组合<br/>
-id2str: Shire里都有个不成文的Convention，都会把id或者_id结尾的字段转换为字符串<br/>
-cache_ver: 缓存的版本</p>
+<dl>
+<dt>order_combs</dt>
+<dd>排序条件的组合</dd>
+
+<dt>id2str</dt>
+<dd>Shire里都有个不成文的Convention，都会把id或者_id结尾的字段转换为字符串</dd>
+
+<dt>cache_ver</dt>
+<dd>缓存的版本</dd>
+</dl>
+
+<h4 id="changelog">Changelog</h4>
+
+<h5 id="orz0.3.02014-01-15">ORZ 0.3.0@2014&#8211;01&#8211;15</h5>
+
+<ol>
+<li>使用OrzBase 以及 Nested Class OrzMeta 来代替orz_decorate; orz_decorete只是废弃了，但在这个版本中仍然可以照常使用。具体区别可以见PR2637</li>
+<li>增加了事务</li>
+<li>优化了性能</li>
+<li>优化了默认值的处理(具体见文档)</li>
+<li>整了一个文档的雏形</li>
+</ol>
 
 <div style="display:none">
 <!--This seemingly unnecessary div markup is the only thing keeping this script working after Markdown conversion. Trust me.-->
