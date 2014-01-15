@@ -1,0 +1,5 @@
+docs:
+    doc:
+        dir: docs
+        builder: raw
+        name: Docs
