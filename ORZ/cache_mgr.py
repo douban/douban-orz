@@ -17,6 +17,7 @@ def make_orders(fields):
         OrzField.KeyType.ASC: lambda x, y: x + [("%s" % y.name,)],
         OrzField.KeyType.AD: lambda x, y: x + [("%s" % y.name, ), ("-%s" % y.name)],
         OrzField.KeyType.NOT_INDEX: lambda x, y: x,
+        OrzField.KeyType.ONLY_INDEX: lambda x, y: x,
     }
     return tuple(reduce(lambda x, y:mapper[y.as_key](x, y), fields, []))
 
@@ -137,6 +138,10 @@ class CachedOrmManager(object):
 
     def save(self, ins, transactional=False):
         cks = []
+
+        if not ins.dirty_fields:
+            return 0
+
         datum = dict((f, getattr(ins, "hidden____org_" + f)) for f in self.db_field_names)
         cks.extend(self._get_cks(datum, ins.dirty_fields))
         cks.extend(self._get_cks(ins, ins.dirty_fields))

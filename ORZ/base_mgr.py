@@ -28,7 +28,7 @@ class OrzField(object):
     name = None
 
     class KeyType(object):
-        NOT_INDEX, DESC, ASC, AD = range(4)
+        NOT_INDEX, DESC, ASC, AD, ONLY_INDEX = range(5)
 
     def __init__(self, as_key=KeyType.NOT_INDEX, default=NO_DEFAULT, output_filter=lambda x:x):
         self.name = None
