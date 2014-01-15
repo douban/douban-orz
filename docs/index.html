@@ -529,11 +529,12 @@ q.save()</code></pre>
 <pre><code class="python">OrzField(default=default_val)</code></pre>
 
 <ul>
-<li><p>default_val 可以是一个值或者一个不接受任何参数的函数。 </p>
+<li>default_val 可以是一个值或者一个不接受任何参数的函数。</li>
+</ul>
 
 <h4 id="transaction">Transaction</h4>
-ORZ封装了一个便捷的事务处理</li>
-</ul>
+
+<p>ORZ封装了一个便捷的事务处理</p>
 
 <pre><code class="python">with start_transaction(orz_instance, OrzModelCLS) as transactional_orz_instance, transactional_orz_cls:
 	transactional_orz_instance.save()
