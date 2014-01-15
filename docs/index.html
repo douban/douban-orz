@@ -166,150 +166,168 @@ pre .chunk {
 
 <h3 id="inanutshell">In a nut shell</h3>
 
-<p>假如数据库声明是这样的</p>
+<p>假如数据库声明是这样的 </p>
 
-<pre><code class="sql">CREATE TABLE `dummy_yummy` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `uid` int(11),
-  `username` varchar(20) NOT NULL,
-  `subject_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `subtype` varchar(50),
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `subject_id_subtype_idx` (`subject_id`, `subtype`),
-  KEY `uid` (`uid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT=&apos;&apos;;</code></pre>
+<p><code>sql  
+CREATE TABLE `dummy_yummy` (  
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,  
+  `uid` int(11),  
+  `username` varchar(20) NOT NULL,  
+  `subject_id` int(11) NOT NULL,  
+  `user_id` int(11) NOT NULL,  
+  `subtype` varchar(50),  
+  PRIMARY KEY (`id`),  
+  KEY `user_id` (`user_id`),  
+  KEY `subject_id_subtype_idx` (`subject_id`, `subtype`),  
+  KEY `uid` (`uid`)  
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';  
+</code> </p>
 
-<p>之前我们会这样写</p>
+<p>之前我们会这样写 </p>
 
-<pre><code class="python">class DummyYummy(object):
-    OBJ_CACHE = &apos;dummyyummy-obj:%s&apos;
-    USER_INDEX_CACHE = &apos;dummyyummy-user:%s&apos;
-    SUBJECT_SUBTYPE_INDEX_CACHE = &apos;dummyyummy-subject:%s|subtype:%s&apos;
-    UID_INDEX_CACHE = &apos;dummyyummy-uid:%s&apos;
+<p>```python<br/>
+class DummyYummy(object):
+ OBJ_CACHE = &#8216;dummyyummy-obj:%s&#8217;
+ USER_INDEX_CACHE = &#8216;dummyyummy-user:%s&#8217;
+ SUBJECT_SUBTYPE_INDEX_CACHE = &#8216;dummyyummy-subject:%s|subtype:%s&#8217;
+ UID_INDEX_CACHE = &#8216;dummyyummy-uid:%s&#8217;</p>
 
-    def __init__(self, id, uid, username, subject_id, user_id, subtype):
-        self.id = id
-        self.uid = uid
-        self.username = username
-        self.subject_id = subject_id
-        self.user_id = user_id
-        self.subtype = subtype
-
-
-    @classmethod
-    def create(cls, uid, username, subject_id, user_id, subtype):
-        id = store.exexute(&apos;insert into dummy_yummy (`uid`, `username`, `subject_id`, `user_id`, `subtype`)&apos;
-                           &apos;values (%s, %s, %s, %s, %s)&apos;, (uid, username, subject_id, user_id, subtype))
-        store.commit()
-
-        mc.delete(cls.SUBJECT_SUBTYPE_INDEX_CACHE % (subject_id, subtype))
-        mc.delete(cls.UID_INDEX_CACHE % uid)
-        mc.delete(cls.USER_INDEX_CACHE % user_id)
-
-        ins = cls(id, uid, username, subject_id, user_id, subtype)
-        mc.set(cls.OBJ_CACHE % ins.id, ind)
-        return ins
-
-    def update_subject_id(self, subject_id):
-        store.execute(&apos;update dummy_yummy set subject_id=%s where id=%s&apos;, (subject_id, self.id))
-        store.commit()
-
-        mc.delete(self.SUBJECT_SUBTYPE_INDEX_CACHE % (self.subject_id, self.subtype))
-
-        self.subject_id = subject_id
-
-        mc.delete(self.SUBJECT_SUBTYPE_INDEX_CACHE % (subject_id, self.subtype))
-        mc.delete(self.OBJ_CACHE % self.id)
-
-    @classmethod
-    def gets(cls, ids):
-        mc.get_multi(ids)
-        return [cls.get(id=id) for id in ids]
+<pre><code>def __init__(self, id, uid, username, subject_id, user_id, subtype):
+    self.id = id
+    self.uid = uid
+    self.username = username
+    self.subject_id = subject_id
+    self.user_id = user_id
+    self.subtype = subtype
 
 
-    @cache(USER_INDEX_CACHE % &quot;{user_id}&quot;)
-    def _gets_by_user_id(cls, user_id):
-        return [id for id, in store.execute(&quot;select id from dummy_yummy where user_id = %s&quot;, user_id)]
+@classmethod
+def create(cls, uid, username, subject_id, user_id, subtype):
+    id = store.exexute('insert into dummy_yummy (`uid`, `username`, `subject_id`, `user_id`, `subtype`)'
+                       'values (%s, %s, %s, %s, %s)', (uid, username, subject_id, user_id, subtype))
+    store.commit()
 
-    def gets_by_user_id(cls, user_id):
-        return cls.gets(cls._gets_by_user_id(user))
+    mc.delete(cls.SUBJECT_SUBTYPE_INDEX_CACHE % (subject_id, subtype))
+    mc.delete(cls.UID_INDEX_CACHE % uid)
+    mc.delete(cls.USER_INDEX_CACHE % user_id)
 
-    @cache(SUBJECT_SUBTYPE_INDEX_CACHE % (&quot;{subject_id}&quot;, &quot;{subtype}&quot;))
-    def _gets_by_subject_id_and_subtype(cls, subject_id, subtype):
-        return [id for id, in store.execute(&quot;select id from dummy_yummy where subject_id = %s and subtype = %s&quot;, (subject_id, subtype))]
+    ins = cls(id, uid, username, subject_id, user_id, subtype)
+    mc.set(cls.OBJ_CACHE % ins.id, ind)
+    return ins
 
-    def gets_by_subject_id_and_subtype(cls, subject_id, subtype):
-        return cls.gets(cls._gets_by_subject_id_and_subtype(cls, subject_id, subtype))
+def update_subject_id(self, subject_id):
+    store.execute('update dummy_yummy set subject_id=%s where id=%s', (subject_id, self.id))
+    store.commit()
 
-    @cache(UID_INDEX_CACHE % &quot;{uid}&quot;)
-    def _gets_by_uid(cls, uid):
-        return [id for id, in store.execute(&quot;select id from dummy_yummy where uid = %s&quot;, uid)]
+    mc.delete(self.SUBJECT_SUBTYPE_INDEX_CACHE % (self.subject_id, self.subtype))
 
-    def gets_by_uid(cls, uid):
-        return cls.gets(cls._gets_by_uid(cls, uid))</code></pre>
+    self.subject_id = subject_id
 
-<p>然后我们这样用</p>
+    mc.delete(self.SUBJECT_SUBTYPE_INDEX_CACHE % (subject_id, self.subtype))
+    mc.delete(self.OBJ_CACHE % self.id)
 
-<pre><code class="python">Dummy.gets_by_subject_id_and_subtype(subject_id, subtype):
-Dummy.gets_by_uid(uid)
-Dummy.gets_by_user_id(user_id)
+@classmethod
+def gets(cls, ids):
+    mc.get_multi(ids)
+    return [cls.get(id=id) for id in ids]
 
 
-dummy_obj = Dummy.create(uid=uid, subject_id=subject_id, subtype=subtype, user_id=user_id, username=username)
+@cache(USER_INDEX_CACHE % &quot;{user_id}&quot;)
+def _gets_by_user_id(cls, user_id):
+    return [id for id, in store.execute(&quot;select id from dummy_yummy where user_id = %s&quot;, user_id)]
 
-dummy_obj.update_subject_id(subject_id=subject_id)</code></pre>
+def gets_by_user_id(cls, user_id):
+    return cls.gets(cls._gets_by_user_id(user))
 
-<p>使用ORZ以后我们这样写</p>
+@cache(SUBJECT_SUBTYPE_INDEX_CACHE % (&quot;{subject_id}&quot;, &quot;{subtype}&quot;))
+def _gets_by_subject_id_and_subtype(cls, subject_id, subtype):
+    return [id for id, in store.execute(&quot;select id from dummy_yummy where subject_id = %s and subtype = %s&quot;, (subject_id, subtype))]
 
-<pre><code class="python">class DummyYummy(OrzBase):
-    __orz_table__ = &apos;dummy_yummy&apos;
-    uid = OrzField(as_key=OrzField.KeyType.DESC)
+def gets_by_subject_id_and_subtype(cls, subject_id, subtype):
+    return cls.gets(cls._gets_by_subject_id_and_subtype(cls, subject_id, subtype))
+
+@cache(UID_INDEX_CACHE % &quot;{uid}&quot;)
+def _gets_by_uid(cls, uid):
+    return [id for id, in store.execute(&quot;select id from dummy_yummy where uid = %s&quot;, uid)]
+
+def gets_by_uid(cls, uid):
+    return cls.gets(cls._gets_by_uid(cls, uid))  
+</code></pre>
+
+<p>``` </p>
+
+<p>然后我们这样用 </p>
+
+<p>```python<br/>
+Dummy.gets_by_subject_id_and_subtype(subject_id, subtype):<br/>
+Dummy.gets_by_uid(uid)<br/>
+Dummy.gets_by_user_id(user_id) </p>
+
+<p>dummy_obj = Dummy.create(uid=uid, subject_id=subject_id, subtype=subtype, user_id=user_id, username=username) </p>
+
+<p>dummy_obj.update_subject_id(subject_id=subject_id)<br/>
+``` </p>
+
+<p>使用ORZ以后我们这样写 </p>
+
+<p><code>python  
+class DummyYummy(OrzBase):
+    __orz_table__ = 'dummy_yummy'
+    uid = OrzField(as_key=OrzField.KeyType.IndexOnly)
     username = OrzField()
-    subject_id = OrzField(as_key=OrzField.KeyType.DESC)
-    user_id = OrzField(as_key=OrzField.KeyType.DESC)
-    subtype = OrzField(as_key=OrzField.KeyType.DESC)</code></pre>
+    subject_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
+    user_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
+    subtype = OrzField(as_key=OrzField.KeyType.IndexOnly)  
+</code> </p>
 
-<p>于是我们这样用</p>
+<p>于是我们这样用 </p>
 
-<pre><code class="python">Dummy.gets_by(uid=uid)
-Dummy.gets_by(subject_id=subject_id, subtype=subtype)
-Dummy.gets_by(user_id=user_id)
+<p>```python<br/>
+Dummy.gets_by(uid=uid)<br/>
+Dummy.gets_by(subject_id=subject_id, subtype=subtype)<br/>
+Dummy.gets_by(user_id=user_id) </p>
 
-dummy_obj = Dummy.create(uid=uid, subject_id=subject_id, subtype=subtype, user_id=user_id, username=username)
+<p>dummy_obj = Dummy.create(uid=uid, subject_id=subject_id, subtype=subtype, user_id=user_id, username=username) </p>
 
-dummy_obj.subject_id = subject_id
-dummy_obj.save()</code></pre>
+<p>dummy_obj.subject_id = subject_id<br/>
+dummy_obj.save()<br/>
+``` </p>
 
 <h2 id="usage">Usage</h2>
 
 <h3 id="setup">set up</h3>
 
-<p>ORZ 在使用Orz关联表之前，需要确保先使用基于douban.corelib.sqlstore和douban.corelib.mc派生的store和mc对ORZ进行配置。</p>
+<p>ORZ 在使用Orz关联表之前，需要确保先使用基于douban.corelib.sqlstore和douban.corelib.mc派生的store和mc对ORZ进行配置。 </p>
 
-<pre><code class="python">from ORZ import setup
-setup(your_store, your_mc)</code></pre>
+<p><code>python  
+from ORZ import setup  
+setup(your_store, your_mc)  
+</code> </p>
 
 <h3 id="与数据表的关联">与数据表的关联</h3>
 
-<p>假定我们有简单表声明如下：</p>
+<p>假定我们有简单表声明如下： </p>
 
-<pre><code class="sql">CREATE TABLE `question` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `subject_id` int(11) unsigned NOT NULL,
-  `title` varchar(1),
-  `author_id` int(11) unsigned NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT=&apos;&apos;;</code></pre>
+<p><code>sql  
+CREATE TABLE `question` (  
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,  
+  `subject_id` int(11) unsigned NOT NULL,  
+  `title` varchar(1),  
+  `author_id` int(11) unsigned NOT NULL  
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='';  
+</code> </p>
 
-<p>根据这个表我们这样定义Model:</p>
+<p>根据这个表我们这样定义Model: </p>
 
-<pre><code class="python"># don&apos;t forget to setup
-from ORZ import OrzBase, Orz
+<p><code>python  
+# don't forget to setup  
+from ORZ import OrzBase, Orz  
 class Question(OrzBase):
     __orz_table__ = &quot;question&quot;
     title = OrzField()
-    subject_id = OrzField()</code></pre>
+    subject_id = OrzField()
+    author_id = OrzField()  
+</code> </p>
 
 <p>从上述定义里可知 </p>
 
@@ -323,25 +341,30 @@ class Question(OrzBase):
 
 <h5 id="基本用法">基本用法</h5>
 
-<p>上面的数据表, 我们增加一个查询的需求&#8211;查询用户，在条目下的问题，于是表增加</p>
+<p>上面的数据表, 我们增加一个查询的需求&#8211;查询用户，在条目下的问题，于是表增加 </p>
 
-<pre><code class="sql">KEY `author_subject_idx` (`author_id`, `subject_id`)</code></pre>
+<p><code>sql  
+KEY `author_subject_idx` (`author_id`, `subject_id`)  
+</code> </p>
 
-<p>Model字段定义改为</p>
+<p>Model字段定义改为 </p>
 
-<pre><code class="python">subject_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
-author_id = OrzField(as_key=OrzField.KeyType.IndexOnly)</code></pre>
+<p><code>python  
+subject_id = OrzField(as_key=OrzField.KeyType.IndexOnly)  
+author_id = OrzField(as_key=OrzField.KeyType.IndexOnly)  
+</code><br/>
+这样不仅按照需求实现的查询的Cache就能被管理了，而且是<code>subject_id</code>和<code>author_id</code>两者，或者之一为维度查询的Cache都能被管理了。也就说，当需求变更索引改为 </p>
 
-<p>这样不仅按照需求实现的查询的Cache就能被管理了，而且是<code>subject_id</code>和<code>author_id</code>两者，或者之一为维度查询的Cache都能被管理了。也就说，当需求变更索引改为</p>
+<p><code>sql  
+KEY `author_idx` (`author_id`),  
+KEY `subject_idx` (`subject_id`)  
+</code><br/>
+或者 </p>
 
-<pre><code class="sql">KEY `author_idx` (`author_id`),
-KEY `subject_idx` (`subject_id`)</code></pre>
-
-<p>或者</p>
-
-<pre><code class="sql">KEY `author_idx` (`author_id`)</code></pre>
-
-<p>的时候，Model声明的字段也是满足需求的对应查询的缓存管理 </p>
+<p><code>sql  
+KEY `author_idx` (`author_id`)  
+</code><br/>
+的时候，Model声明的字段也是满足需求的对应查询的缓存管理 </p>
 
 <h4 id="接口使用">接口使用</h4>
 
@@ -349,20 +372,26 @@ KEY `subject_idx` (`subject_id`)</code></pre>
 
 <h5 id="create">Create</h5>
 
-<pre><code>ModelClass.create(**field_and_its_val)</code></pre>
+<p><code>
+ModelClass.create(**field_and_its_val)  
+</code> </p>
 
 <ul>
 <li>根据字段定义，以 keyword argruments 的形式传入。</li>
 <li>在唯一性约束的表里，参数和表内数据有重复，会直接抛出 <code>MySQLdb.IntegrityError</code></li>
 </ul>
 
-<p>例子:</p>
+<p>例子: </p>
 
-<pre><code class="python">question = Question.create(subject_id=subject.id, author_id=user.id, title=&quot;hdadfasdf&quot;)</code></pre>
+<p><code>python  
+question = Question.create(subject_id=subject.id, author_id=user.id, title=&quot;hdadfasdf&quot;)  
+</code> </p>
 
 <h5 id="read">Read</h5>
 
-<pre><code class="python">ModelCLS.gets_by(order_by=order_keys, start=0, limit=EPISION, **condition)</code></pre>
+<p><code>python  
+ModelCLS.gets_by(order_by=order_keys, start=0, limit=EPISION, **condition)  
+</code> </p>
 
 <ul>
 <li>condition 即 SQL where key = val</li>
@@ -370,15 +399,19 @@ KEY `subject_idx` (`subject_id`)</code></pre>
 <li>默认取全部数据，也可以分页。</li>
 </ul>
 
-<p>例子:</p>
+<p>例子: </p>
 
-<pre><code class="python">questions = Question.gets_by(subject_id=subject.id)
-questions = Question.gets_by(subject_id=subject.id, author_id=user.id)
-questions = Question.gets_by(author_id=user.id)</code></pre>
+<p><code>python  
+questions = Question.gets_by(subject_id=subject.id)  
+questions = Question.gets_by(subject_id=subject.id, author_id=user.id)  
+questions = Question.gets_by(author_id=user.id)  
+</code> </p>
 
-<p>亦可根据ID，查询单个对象</p>
+<p>亦可根据ID，查询单个对象 </p>
 
-<pre><code class="python">question = Question.get_by(id=1)</code></pre>
+<p><code>python  
+question = Question.get_by(id=1)  
+</code> </p>
 
 <ul>
 <li>现阶段 <code>get_by</code> 只接受 <code>id</code> 的查询</li>
@@ -386,14 +419,18 @@ questions = Question.gets_by(author_id=user.id)</code></pre>
 
 <h5 id="update">Update</h5>
 
-<pre><code class="python">model_instance.save()</code></pre>
+<p><code>python  
+model_instance.save()  
+</code> </p>
 
-<p>例子:</p>
+<p>例子: </p>
 
-<pre><code class="python">question = Question.gets_by(subject_id=1)[0]
-question.title = &quot;hello world&quot;
-question.subject_id = 2
-ret = quesiton.save()</code></pre>
+<p><code>python  
+question = Question.gets_by(subject_id=1)[0]  
+question.title = &quot;hello world&quot;  
+question.subject_id = 2  
+ret = quesiton.save()  
+</code> </p>
 
 <ul>
 <li><p>ret 为数据库操作的返回值 </p></li>
@@ -402,16 +439,20 @@ ret = quesiton.save()</code></pre>
 
 <h5 id="delete">Delete</h5>
 
-<pre><code class="python">ret = model_instance.delete()</code></pre>
+<p><code>python  
+ret = model_instance.delete()  
+</code> </p>
 
 <ul>
 <li>ret 为数据库操作的返回值</li>
 </ul>
 
-<p>例子:</p>
+<p>例子: </p>
 
-<pre><code class="python">question = Question.gets_by(subject_id=1)[0]
-question.delete()</code></pre>
+<p><code>python  
+question = Question.gets_by(subject_id=1)[0]  
+question.delete()  
+</code> </p>
 
 <h4 id="组合与扩展">组合与扩展</h4>
 
@@ -419,11 +460,13 @@ question.delete()</code></pre>
 
 <h5 id="creationaspect">Creation Aspect</h5>
 
-<pre><code class="python">def before_create(self, **extra_args):
-    pass
+<p>```python<br/>
+def before_create(self, **extra_args):
+ pass </p>
 
-def after_create(self, **extra_args):
-    pass</code></pre>
+<p>def after_create(self, **extra_args):
+ pass<br/>
+``` </p>
 
 <ul>
 <li><code>extra_args</code> 是调用 <code>create</code> 时传入的非 <code>OrzField</code> 定义的参数。</li>
@@ -432,19 +475,23 @@ def after_create(self, **extra_args):
 
 <h5 id="saveaspect">Save Aspect</h5>
 
-<pre><code class="python">def before_save(self):
-    pass
+<p>```python<br/>
+def before_save(self):
+ pass </p>
 
-def after_save(self):
-    pass</code></pre>
+<p>def after_save(self):
+ pass<br/>
+``` </p>
 
 <h5 id="deletionaspect">Deletion Aspect</h5>
 
-<pre><code class="python">def before_delete(self):
-    pass
+<p>```python<br/>
+def before_delete(self):
+ pass </p>
 
-def after_delete(self):
-    pass</code></pre>
+<p>def after_delete(self):
+ pass<br/>
+``` </p>
 
 <h5 id="warning">Warning</h5>
 
@@ -454,30 +501,32 @@ def after_delete(self):
 
 <h5 id="简单的排序">简单的排序</h5>
 
-<p>由于在定义数据库的时候，用于排序的Field都会被定义为索引(的一部分), 同时我发现我们在实际操作中一般，都只有一个方向的排序，所以基于这个语义 <code>OrzField</code> 提供了一个便捷的方式来处理定义以便管理缓存</p>
+<p>由于在定义数据库的时候，用于排序的Field都会被定义为索引(的一部分), 同时我发现我们在实际操作中一般，都只有一个方向的排序，所以基于这个语义 <code>OrzField</code> 提供了一个便捷的方式来处理定义以便管理缓存 </p>
 
-<pre><code class="python">subject_id = OrzField(as_key=OrzField.KeyType.X)</code></pre>
+<p><code>python  
+subject_id = OrzField(as_key=OrzField.KeyType.X)  
+</code><br/>
+- X = DESC
+ subject_id 可能会作为查询条件， 同时以<em>只以subject_id降序</em>可能会作为查询集合<em>单独</em>排序条件<br/>
+- X = ASC
+ subject_id 可能会作为查询条件， 同时以<em>只以subject_id升序</em>可能会作为查询集合<em>单独</em>排序条件<br/>
+- X = AD
+ subject_id 可能会作为查询条件， 同时以<em>subject_id升序或者降序</em>都可能会作为查询集合<em>单独</em>排序条件 </p>
 
-<ul>
-<li>X = DESC
-subject_id 可能会作为查询条件， 同时以<em>只以subject_id降序</em>可能会作为查询集合<em>单独</em>排序条件</li>
-<li>X = ASC
-subject_id 可能会作为查询条件， 同时以<em>只以subject_id升序</em>可能会作为查询集合<em>单独</em>排序条件</li>
-<li>X = AD
-subject_id 可能会作为查询条件， 同时以<em>subject_id升序或者降序</em>都可能会作为查询集合<em>单独</em>排序条件</li>
-</ul>
-
-<p>例子:</p>
-
-<pre><code class="python"># 假如上述例子里X为 DESC
-questions = Question.gets_by(author_id=user.id, order_by=&apos;-subject_id&apos;)</code></pre>
+<p>例子:<br/>
+<code>python  
+# 假如上述例子里X为 DESC  
+questions = Question.gets_by(author_id=user.id, order_by='-subject_id')  
+</code> </p>
 
 <h5 id="复杂的排序">复杂的排序</h5>
 
-<p>假如需要的查询是类似 <code>sql</code> 里 <code>order by key1 desc, key2</code>，或者定义的 <code>OrzField</code> 并作为查询条件，那么可以在OrzModel里定义一个 Nested Class - <code>OrzMeta</code></p>
+<p>假如需要的查询是类似 <code>sql</code> 里 <code>order by key1 desc, key2</code>，或者定义的 <code>OrzField</code> 并作为查询条件，那么可以在OrzModel里定义一个 Nested Class - <code>OrzMeta</code> </p>
 
-<pre><code>class OrzMeta:
-    order_combs = ((&apos;-key1&apos;, &apos;key2&apos;), (&apos;key3&apos;，), ...)</code></pre>
+<p><code>
+class OrzMeta:
+    order_combs = (('-key1', 'key2'), ('key3'，), ...)  
+</code> </p>
 
 <ul>
 <li>order_combs 是 <code>tuple</code>，<code>tuple</code>里每个元素都是一个排序组合的<code>tuple</code>。排序的字段用字符串表示，降序在字段前加&#8220;-&#8221;作为前缀。</li>
@@ -497,35 +546,42 @@ questions = Question.gets_by(author_id=user.id, order_by=&apos;-subject_id&apos;
 
 <h5 id="sql的默认值">SQL的默认值</h5>
 
-<p>先看定义和Model定义</p>
+<p>先看定义和Model定义 </p>
 
-<pre><code class="sql">`title` varchar(10) DEFAULT &apos;hello&apos;
-`created_at` timestamp NOT NULL DEFAULT &apos;2010-10-10 10:10:10&apos;,
-`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</code></pre>
+<p><code>sql  
+`title` varchar(10) DEFAULT 'hello'  
+`created_at` timestamp NOT NULL DEFAULT '2010-10-10 10:10:10',  
+`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  
+</code> </p>
 
-<pre><code class="python">class Question(OrzModel):
+<p><code>python  
+class Question(OrzModel):
     __orz_table__=&quot;question&quot;
     updated_at = OrzField()
     created_at = OrzField()
-    title = OrzField()</code></pre>
+    title = OrzField()  
+</code> </p>
 
 <p>那么 <code>q = Question.create()</code> 里 <code>q.updated_at</code> 等于当前时间, <code>q.created_at</code> 等于 <code>datetime(year=2010, month=10, day=10, hour=10, minute=10, sencond=10)</code> , <code>q.title</code> 等于 <code>'hello'</code> </p>
 
-<p>更进一步</p>
+<p>更进一步 </p>
 
-<pre><code class="python">q = Question.create()
-q.title = &quot;world&quot;
-q.save()</code></pre>
-
-<p>那么 <code>q.updated_at</code> 变更为调用save那个时间点 </p>
+<p><code>python  
+q = Question.create()  
+q.title = &quot;world&quot;  
+q.save()  
+</code><br/>
+那么 <code>q.updated_at</code> 变更为调用save那个时间点 </p>
 
 <p>换句话说，Orz会把SQL产生的结果更新到instance上。 </p>
 
 <h5 id="orzsdefaultsoncreation">Orz&#8217;s defaults on creation</h5>
 
-<p>除了SQL自身的默认值， ORZ也提供了创建在创建对象时候的默认值</p>
+<p>除了SQL自身的默认值， ORZ也提供了创建在创建对象时候的默认值 </p>
 
-<pre><code class="python">OrzField(default=default_val)</code></pre>
+<p><code>python  
+OrzField(default=default_val)  
+</code> </p>
 
 <ul>
 <li>default_val 可以是一个值或者一个不接受任何参数的函数。</li>
@@ -533,11 +589,13 @@ q.save()</code></pre>
 
 <h4 id="transaction">Transaction</h4>
 
-<p>ORZ封装了一个便捷的事务处理</p>
+<p>ORZ封装了一个便捷的事务处理 </p>
 
-<pre><code class="python">with start_transaction(orz_instance, OrzModelCLS) as transactional_orz_instance, transactional_orz_cls:
+<p><code>python  
+with start_transaction(orz_instance, OrzModelCLS) as transactional_orz_instance, transactional_orz_cls:
     transactional_orz_instance.save()
-    transactional_orz_cls.create(**kwargs)</code></pre>
+    transactional_orz_cls.create(**kwargs)  
+</code> </p>
 
 <ul>
 <li>在这个transaction的context里，抛出<code>IntegrityError</code>或者<code>OrzForceRollBack</code>都会Rollback</li>
@@ -572,11 +630,13 @@ q.save()</code></pre>
 
 <h5 id="orzmeta">OrzMeta</h5>
 
-<pre><code class="python">class OrzMeta:
-    order_combs = (,)
-    id2str = False
-    cache_ver = &apos;&apos;
-</code></pre>
+<p>```python<br/>
+class OrzMeta:
+ order_combs = (,)
+ id2str = False
+ cache_ver = &#8217;&#8217; </p>
+
+<p>``` </p>
 
 <dl>
 <dt>order_combs</dt>
@@ -594,7 +654,7 @@ q.save()</code></pre>
 <h5 id="orz0.3.02014-01-15">ORZ 0.3.0@2014&#8211;01&#8211;15</h5>
 
 <ol>
-<li>使用OrzBase 以及 Nested Class OrzMeta 来代替orz_decorate; orz_decorete只是废弃了，但在这个版本中仍然可以照常使用。具体区别可以见PR2637</li>
+<li>使用OrzBase 以及 Nested Class OrzMeta 来代替orz_decorate; orz_decorate只是废弃了，但在这个版本中仍然可以照常使用。具体区别可以见PR2637</li>
 <li>增加了事务</li>
 <li>优化了性能</li>
 <li>优化了默认值的处理(具体见文档)</li>
