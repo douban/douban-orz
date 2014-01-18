@@ -1,5 +1,5 @@
 docs:
     doc:
         dir: docs
-        builder: raw
+        builder: html
         name: Docs
