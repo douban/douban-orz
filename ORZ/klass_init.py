@@ -195,6 +195,10 @@ class OrzBase(object):
     def count_by(cls, *a, **kw):
         return cls.objects.count_by(*a, **kw)
 
+    @classmethod
+    def exist(cls, *a, **kw):
+        return cls.objects.count_by(*a, **kw) > 0
+
     def after_create(self, **kw):
         pass
 
