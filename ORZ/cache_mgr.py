@@ -8,7 +8,11 @@ from .configs import CacheConfigMgr, Config
 
 ONE_HOUR=3600
 
-HEADQUARTER_VERSION = 'a3'
+HEADQUARTER_VERSION = 'orz-hq-ver:1'
+
+SINGLE_OBJ_CACHE_KEY_PATTERN = "%s|{table_name}|single_obj_ck|ver:{ver}|id:" % HEADQUARTER_VERSION
+
+KV_TO_IDS_CACHE_KEY_PATTERN = "%s|{table_name}|kv_to_ids|ver:{ver}|" % HEADQUARTER_VERSION
 
 
 def make_orders(fields):
@@ -25,13 +29,13 @@ def make_orders(fields):
 class CachedOrmManager(object):
     def __init__(self, table_name, cls, db_fields, sqlstore, mc,
                  cache_ver='', order_combs=tuple()):
-        self.single_obj_ck = HEADQUARTER_VERSION + "%s:single_obj_ck:" % table_name + cache_ver
+        self.single_obj_ck = SINGLE_OBJ_CACHE_KEY_PATTERN.format(table_name=table_name, ver=cache_ver)
         self.cls = cls
         self.mc = mc
         self.db_field_names = [i.name for i in db_fields]
         self.primary_field = (i for i in db_fields if isinstance(i, OrzPrimaryField)).next()
         self.sql_executor = SqlExecutor(table_name, self.primary_field.name,  [f.name for f in db_fields], sqlstore)
-        kv_to_ids_ck = HEADQUARTER_VERSION + "%s:kv_to_ids:" % table_name + cache_ver
+        kv_to_ids_ck = KV_TO_IDS_CACHE_KEY_PATTERN.format(table_name=table_name, ver=cache_ver)
         self.config_mgr = CacheConfigMgr()
 
         orders = make_orders(db_fields) + order_combs
