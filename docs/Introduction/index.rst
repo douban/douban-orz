@@ -111,6 +111,10 @@ In a nut shell
 
 ::
 
+    from ORZ.exports import OrzBase
+
+    setup(your_store, your_mc)
+
     class DummyYummy(OrzBase):
         __orz_table__ = 'dummy_yummy'
         uid = OrzField(as_key=OrzField.KeyType.IndexOnly)

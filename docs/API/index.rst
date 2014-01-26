@@ -1,6 +1,13 @@
 Full API
 ============
 
+Namespace
+^^^^^^^^^^^
+
+::
+
+    from ORZ.exports import x
+
 Transaction
 ^^^^^^^^^^^
 
