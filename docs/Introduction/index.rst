@@ -117,11 +117,11 @@ In a nut shell
 
     class DummyYummy(OrzBase):
         __orz_table__ = 'dummy_yummy'
-        uid = OrzField(as_key=OrzField.KeyType.IndexOnly)
+        uid = OrzField(as_key=OrzField.KeyType.ONLY_INDEX)
         username = OrzField()
-        subject_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
-        user_id = OrzField(as_key=OrzField.KeyType.IndexOnly)
-        subtype = OrzField(as_key=OrzField.KeyType.IndexOnly)
+        subject_id = OrzField(as_key=OrzField.KeyType.ONLY_INDEX)
+        user_id = OrzField(as_key=OrzField.KeyType.ONLY_INDEX)
+        subtype = OrzField(as_key=OrzField.KeyType.ONLY_INDEX)
 
 于是我们这样用
 
