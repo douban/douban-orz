@@ -14,7 +14,7 @@ class TestField(TestCase):
 
         for order_t, asst in assertions.iteritems():
             foo = OrzPrimaryField(order_t)
-            foo.name = NAME
+            foo.field_name = NAME
             self.assertEqual(foo.as_default_order_key(), asst)
 
     def test_basic_primary_field(self):
@@ -25,8 +25,7 @@ class TestField(TestCase):
 
         field = _initialize_primary_field(self.klass)
         self.assertTrue(hasattr(self.klass, 'id'))
-        self.assertEqual(field.name, 'id')
-        self.assertTrue(isinstance(self.klass.id, OrzPrimaryField))
+        self.assertEqual(field.field_name, 'id')
 
     def test_customized_primary_field(self):
         class ORZFieldTest(object):
@@ -36,8 +35,7 @@ class TestField(TestCase):
 
         field = _initialize_primary_field(ORZFieldTest)
         self.assertTrue(hasattr(ORZFieldTest, 'foo_bar'))
-        self.assertEqual(field.name, 'foo_bar')
-        self.assertTrue(isinstance(ORZFieldTest.foo_bar, OrzPrimaryField))
+        self.assertEqual(field.field_name, 'foo_bar')
 
 
 @patch("ORZ.klass_init.warnings.warn")

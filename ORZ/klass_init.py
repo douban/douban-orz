@@ -2,7 +2,7 @@
 from functools import wraps
 
 from .cache_mgr import CachedOrmManager
-from .base_mgr import OrmItem, OrzField, OrzPrimaryField
+from .base_mgr import OrzField, OrzPrimaryField
 import warnings
 
 def _split_dictonary(di, predicate):
@@ -22,12 +22,12 @@ def _initialize_primary_field(cls):
 
     if len(primary_fields) == 0:
         v = OrzPrimaryField()
-        v.name = "id"
+        v.field_name = "id"
         setattr(cls, 'id', v)
         return v
     else:
         field_name, field = primary_fields[0]
-        field.name = field_name
+        field.field_name = field_name
         return field
 
 
@@ -40,7 +40,7 @@ def _collect_fields(cls, id2str):
     # use dicts of classes by reversed mro order instead of dir(cls) to bypass invoking descriptor
     for i, v in reduce(merge_dict,  [o.__dict__ for o in reversed(cls.__mro__)]).iteritems():
         if isinstance(v, OrzField):
-            v.name = i
+            v.field_name = i
             if id2str and (i=='id' or i.endswith("_id")):
                 v.output_filter = lambda x: None if x is None else str(x)
             yield (i, v)
@@ -84,8 +84,6 @@ class OrzMeta(type):
                                            mc=orz_mc,
                                            cache_ver=cache_ver,
                                            order_combs=order_combs)
-            for f in raw_db_fields:
-                setattr(cls, f.name, OrmItem(f.name, f.output_filter))
 
 class OrzBase(object):
 

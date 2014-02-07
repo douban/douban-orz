@@ -1,7 +1,7 @@
 # -*- coding:utf8 -*-
 from .cache_mgr import CachedOrmManager
 from .mixed_ins import *
-from .base_mgr import OrmItem, OrzField, OrzPrimaryField
+from .base_mgr import OrzField, OrzPrimaryField
 from .klass_init import _split_dictonary, _initialize_primary_field, _collect_fields, _collect_order_combs
 
 def method_combine(func, reserved_args=tuple(), alias=None):
@@ -58,7 +58,5 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
     cls.get_by = cls.objects.get
     cls.exist = classmethod(exist)
 
-    for f in raw_db_fields:
-        setattr(cls, f.name, OrmItem(f.name, f.output_filter))
     return cls
 

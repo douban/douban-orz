@@ -3,7 +3,7 @@ import sys
 from collections import defaultdict
 
 from .sql_executor import SqlExecutor
-from .base_mgr import OrmItem, OrzField, OrzPrimaryField
+from .base_mgr import OrzField, OrzPrimaryField
 from .configs import CacheConfigMgr, Config
 
 ONE_HOUR=3600
@@ -17,9 +17,9 @@ KV_TO_IDS_CACHE_KEY_PATTERN = "%s|{table_name}|kv_to_ids|ver:{ver}|" % HEADQUART
 
 def make_orders(fields):
     mapper = {
-        OrzField.KeyType.DESC: lambda x, y: x + [("-%s" % y.name,)],
-        OrzField.KeyType.ASC: lambda x, y: x + [("%s" % y.name,)],
-        OrzField.KeyType.AD: lambda x, y: x + [("%s" % y.name, ), ("-%s" % y.name)],
+        OrzField.KeyType.DESC: lambda x, y: x + [("-%s" % y.field_name,)],
+        OrzField.KeyType.ASC: lambda x, y: x + [("%s" % y.field_name,)],
+        OrzField.KeyType.AD: lambda x, y: x + [("%s" % y.field_name, ), ("-%s" % y.field_name)],
         OrzField.KeyType.NOT_INDEX: lambda x, y: x,
         OrzField.KeyType.ONLY_INDEX: lambda x, y: x,
     }
@@ -32,17 +32,17 @@ class CachedOrmManager(object):
         self.single_obj_ck = SINGLE_OBJ_CACHE_KEY_PATTERN.format(table_name=table_name, ver=cache_ver)
         self.cls = cls
         self.mc = mc
-        self.db_field_names = [i.name for i in db_fields]
+        self.db_field_names = [i.field_name for i in db_fields]
         self.primary_field = (i for i in db_fields if isinstance(i, OrzPrimaryField)).next()
-        self.sql_executor = SqlExecutor(table_name, self.primary_field.name,  [f.name for f in db_fields], sqlstore)
+        self.sql_executor = SqlExecutor(table_name, self.primary_field.field_name,  [f.field_name for f in db_fields], sqlstore)
         kv_to_ids_ck = KV_TO_IDS_CACHE_KEY_PATTERN.format(table_name=table_name, ver=cache_ver)
         self.config_mgr = CacheConfigMgr()
 
         orders = make_orders(db_fields) + order_combs
         self.config_mgr.generate_basic_configs(kv_to_ids_ck,
-                                               [f.name for f in db_fields if f.as_key], orders)
+                                               [f.field_name for f in db_fields if f.as_key], orders)
 
-        self.default_vals = dict((k.name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
+        self.default_vals = dict((k.field_name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
 
 
     def _get_and_refresh(self, sql_executor, primary_field_vals, force_flush=False):

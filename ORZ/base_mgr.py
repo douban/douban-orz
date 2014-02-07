@@ -4,10 +4,19 @@ from MySQLdb import IntegrityError
 from functools import wraps
 from contextlib import contextmanager
 
-class OrmItem(object):
-    def __init__(self, field_name, output_filter=lambda x: x):
-        self.field_name = field_name
+
+class OrzField(object):
+    NO_DEFAULT = sys.maxint
+    name = None
+
+    class KeyType(object):
+        NOT_INDEX, DESC, ASC, AD, ONLY_INDEX = range(5)
+
+    def __init__(self, as_key=KeyType.NOT_INDEX, default=NO_DEFAULT, output_filter=lambda x:x):
+        self.as_key = as_key
+        self.default = default
         self.output_filter = output_filter
+        self.field_name = None
 
     def __set__(self, obj, value):
         value = int(value) if type(value) == bool else value
@@ -23,19 +32,7 @@ class OrmItem(object):
         return self.output_filter(getattr(obj, "hidden____" + self.field_name, None))
 
 
-class OrzField(object):
-    NO_DEFAULT = sys.maxint
-    name = None
-
-    class KeyType(object):
-        NOT_INDEX, DESC, ASC, AD, ONLY_INDEX = range(5)
-
-    def __init__(self, as_key=KeyType.NOT_INDEX, default=NO_DEFAULT, output_filter=lambda x:x):
-        self.name = None
-        self.as_key = as_key
-        self.default = default
-        self.output_filter = output_filter
-
+OrmItem = OrzField
 
 class OrzPrimaryField(OrzField):
     class OrderType(object):
@@ -57,9 +54,9 @@ class OrzPrimaryField(OrzField):
         self.order_kind = order_kind
 
     def as_default_order_key(self):
-        if self.name is None:
+        if self.field_name is None:
             raise ValueError('name is needed')
-        return tuple([i % self.name for i in self._order_tranformation[self.order_kind]])
+        return tuple([i % self.field_name for i in self._order_tranformation[self.order_kind]])
 
 def orz_get_multi(func):
     @wraps(func)
