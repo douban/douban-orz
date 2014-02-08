@@ -13,7 +13,7 @@ from douban.mc.wrapper import LocalCached
 mc = LocalCached(mc_from_config(MEMCACHED))
 
 from douban.sqlstore import store_from_config
-from ORZ import orz_decorate, OrzField, orz_get_multi, start_transaction, OrzForceRollBack
+from ORZ.exports import orz_decorate, OrzField, orz_get_multi, start_transaction, OrzForceRollBack
 
 DATABASE = {
     'farms': {

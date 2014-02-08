@@ -1,5 +1,5 @@
 # -*- coding:utf8 -*-
-from .cache_mgr import CachedOrmManager
+from .cache_mgr import SQL2CacheOperator
 from .mixed_ins import *
 from .base_mgr import OrzField, OrzPrimaryField
 from .klass_init import _split_dictonary, _initialize_primary_field, _collect_fields, _collect_order_combs
@@ -33,13 +33,13 @@ def cached_wrapper(cls, table_name, sqlstore=None, mc=None, cache_ver='', id2str
     order_combs = _collect_order_combs(cls)
 
 
-    cls.objects = CachedOrmManager(table_name,
-                                   cls,
-                                   raw_db_fields,
-                                   sqlstore=sqlstore,
-                                   mc=mc,
-                                   cache_ver=cache_ver,
-                                   order_combs=order_combs)
+    cls.objects = SQL2CacheOperator(table_name,
+                                    cls,
+                                    raw_db_fields,
+                                    sqlstore=sqlstore,
+                                    mc=mc,
+                                    cache_ver=cache_ver,
+                                    order_combs=order_combs)
 
 
     cls.save = method_combine(save)

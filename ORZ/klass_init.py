@@ -1,7 +1,7 @@
 # -*- coding:utf8 -*-
 from functools import wraps
 
-from .cache_mgr import CachedOrmManager
+from .cache_mgr import SQL2CacheOperator
 from .base_mgr import OrzField, OrzPrimaryField
 import warnings
 
@@ -77,13 +77,13 @@ class OrzMeta(type):
             db_fields, raw_db_fields = zip(*_collect_fields(cls, id2str))
             order_combs = _collect_order_combs(cls)
             cls.db_fields = db_fields
-            cls.objects = CachedOrmManager(table_name,
-                                           cls,
-                                           raw_db_fields,
-                                           sqlstore=orz_sqlstore,
-                                           mc=orz_mc,
-                                           cache_ver=cache_ver,
-                                           order_combs=order_combs)
+            cls.objects = SQL2CacheOperator(table_name,
+                                            cls,
+                                            raw_db_fields,
+                                            sqlstore=orz_sqlstore,
+                                            mc=orz_mc,
+                                            cache_ver=cache_ver,
+                                            order_combs=order_combs)
 
 class OrzBase(object):
 

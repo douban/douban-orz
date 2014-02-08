@@ -1,7 +1,7 @@
 from unittest import TestCase, skip
 
 from .env_init import store, mc
-from ORZ import orz_decorate, OrzField, orz_get_multi, OrzPrimaryField
+from ORZ.exports import orz_decorate, OrzField, orz_get_multi, OrzPrimaryField
 
 
 @orz_decorate('test_orz', sqlstore=store, mc=mc)

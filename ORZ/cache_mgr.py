@@ -26,7 +26,7 @@ def make_orders(fields):
     return tuple(reduce(lambda x, y:mapper[y.as_key](x, y), fields, []))
 
 
-class CachedOrmManager(object):
+class SQL2CacheOperator(object):
     def __init__(self, table_name, cls, db_fields, sqlstore, mc,
                  cache_ver='', order_combs=tuple()):
         self.single_obj_ck = SINGLE_OBJ_CACHE_KEY_PATTERN.format(table_name=table_name, ver=cache_ver)

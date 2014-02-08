@@ -1,6 +1,6 @@
 from mock import patch
 from unittest import TestCase
-from ORZ import OrzField, OrzPrimaryField
+from ORZ.exports import OrzField, OrzPrimaryField
 from ORZ.klass_init import _initialize_primary_field, _collect_order_combs
 
 class TestField(TestCase):

@@ -1,7 +1,7 @@
 from unittest import TestCase, skip
 
 from .env_init import store, mc, initted
-from ORZ import OrzBase, OrzField, orz_get_multi, OrzPrimaryField, setup as setup_orz
+from ORZ.exports import OrzBase, OrzField, orz_get_multi, OrzPrimaryField, setup as setup_orz
 
 setup_orz(store, mc)
 
