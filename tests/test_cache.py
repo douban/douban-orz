@@ -75,3 +75,4 @@ class TestCache(TestCase):
         run_pred(before)
         Dummy.invalidate_cache_by_condition(**cond_all)
         run_pred(after)
+

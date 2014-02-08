@@ -44,7 +44,6 @@ class SQL2CacheOperator(object):
 
         self.default_vals = dict((k.field_name, k.default) for k in db_fields if k.default != OrzField.NO_DEFAULT)
 
-
     def _get_and_refresh(self, sql_executor, primary_field_vals, force_flush=False):
         res = []
         if not force_flush:
@@ -79,7 +78,6 @@ class SQL2CacheOperator(object):
             return True
 
         return False
-
 
     def fetch(self, force_flush, conditions, order_keys = None, start_limit = None):
         amount = sys.maxint

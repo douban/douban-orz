@@ -67,3 +67,21 @@ id2str
 cache\_ver
     缓存的版本
 
+
+Cache Invalidation
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+::
+
+    your_orz_class.invalidate_cache_by_condition(**condtion)
+
+condition
+    同gets_by里的condition
+
+::
+
+    your_orz_instance.invalidate_cache(condtion)
+
+清除该instance 关联的所有cache
+
