@@ -1,9 +1,10 @@
 import os
 from setuptools import setup, find_packages
+from ORZ import __version__
 
 # package meta info
 NAME = "ORZ"
-VERSION = "0.33"
+VERSION = __version__
 DESCRIPTION = "missing data manager in shire, even in middle earth"
 AUTHOR = "fuyuquan"
 AUTHOR_EMAIL = "fuyuquan@douban.com"
