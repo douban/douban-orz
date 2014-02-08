@@ -119,7 +119,9 @@ class SQL2CacheOperator(object):
         kwargs.update(raw_kwargs)
 
         cks = self._get_cks(kwargs, self.db_field_names)
-        self.mc.delete_multi(cks)
+        ret = self.mc.delete_multi(cks)
+        if not ret:
+            return None
 
         sql_data = dict((field, kwargs.pop(field)) for field in self.db_field_names if field in kwargs)
         _primary_field_val = self.sql_executor.create(sql_data, transactional)
@@ -161,7 +163,10 @@ class SQL2CacheOperator(object):
         cks.extend(self._get_cks(ins, ins.dirty_fields))
 
         all_cks = cks + [self.single_obj_ck+str(ins.id)]
-        self.mc.delete_multi(all_cks)
+        ret = self.mc.delete_multi(all_cks)
+        if not ret:
+            return 0
+
 
         sql_data = dict((field, getattr(ins, field)) for field in ins.dirty_fields)
         ret = self.sql_executor.update_row(ins.id, sql_data, transactional)
@@ -177,7 +182,9 @@ class SQL2CacheOperator(object):
     def delete(self, ins, transactional=False):
         cks = self._get_cks(ins, [self.primary_field.name]+self.db_field_names)
 
-        self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
+        ret = self.mc.delete_multi(cks + [self.single_obj_ck+str(ins.id)])
+        if not ret:
+            return 0
 
         return self.sql_executor.delete(ins.id, transactional)
 

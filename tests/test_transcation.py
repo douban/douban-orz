@@ -55,11 +55,9 @@ class TestT(object):
     subject_id = OrzField(OrzField.KeyType.DESC)
 
     def after_create(self):
-        print "333d"
         self.after_create = True
 
     def after_save(self):
-        print "333d"*3
         self.after_save = True
 
 @orz_decorate('test_a', sqlstore=store, mc=mc)
