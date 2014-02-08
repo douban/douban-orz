@@ -128,6 +128,18 @@ class SQL2CacheOperator(object):
 
         return self.sql_executor.get(_primary_field_val)
 
+    def invalidate_cache(self, data):
+        _data = data.copy()
+        cks = []
+        if 'id' in _data:
+            id_val = _data.pop('id')
+            cks.append(self.single_obj_ck + str(id_val))
+
+        cks.extend(self._get_cks(_data, _data.keys()))
+
+        ret = self.mc.delete_multi(cks)
+        return ret
+
     def _get_cks(self, data_src, fields):
         cks = []
         configs = {}

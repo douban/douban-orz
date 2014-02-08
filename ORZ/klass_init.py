@@ -215,6 +215,13 @@ class OrzBase(object):
     def after_delete(self):
         pass
 
+    def invalidate_cache(self):
+        return self.objects.invalidate_cache(dict((k, getattr(self, k)) for k in self.db_fields))
+
+    @classmethod
+    def invalidate_cache_by_condition(cls, **condition):
+        return cls.objects.invalidate_cache(condition)
+
 
 class OrzMixinMeta(OrzMeta):
     def __init__(cls, name, bases, di):
