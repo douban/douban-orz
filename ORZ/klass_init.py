@@ -178,6 +178,7 @@ class OrzBase(object):
         self._initted = False
         for i in self.db_fields:
             setattr(self, i, state['db_fields'][i])
+        self._detached = False
         self._initted = True
 
 
